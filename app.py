@@ -400,4 +400,269 @@ def show_timer() -> None:
         if seconds is None:
             st.caption("⏱️ No time limit")
         else:
-            if 
+            if seconds <= 0:
+                st.session_state.quiz_submitted = True
+                st.warning("समय पूरा हो गया — आपका टेस्ट submit कर दिया गया है।")
+                st.rerun(scope="app")
+            elif seconds <= 60:
+                st.error(f"⏱️ Time left: {format_time(seconds)}")
+            else:
+                st.info(f"⏱️ Time left: {format_time(seconds)}")
+    _timer_fragment()
+
+
+def render_home() -> None:
+    header()
+    st.markdown(
+        """
+        <div class="hero">
+          <div class="eyebrow">WELCOME TO YOUR STUDY SPACE</div>
+          <h1>Hey, Learner! 👋</h1>
+          <p>Apni preparation ko smart banao. Quiz banao, practice karo aur apni progress check karo.</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown('<div class="section-label">Choose Your Practice</div>', unsafe_allow_html=True)
+    col1, col2 = st.columns(2, gap="large")
+    with col1:
+        st.markdown('<div class="feature-card"><div class="feature-icon">📄</div><h3>PDF to Quiz Generate</h3><p>Apni PDF se MCQ quiz taiyar karo. Question count, time limit aur language khud chuno.</p></div>', unsafe_allow_html=True)
+        if st.button("📄  Create Quiz from PDF", use_container_width=True, key="home_pdf"):
+            st.session_state.page = "pdf"
+            st.rerun()
+    with col2:
+        st.markdown('<div class="feature-card"><div class="feature-icon">🎓</div><h3>PYQ Practice</h3><p>Apna previous-year paper upload karo ya clearly labelled AI-generated exam-style practice karo.</p></div>', unsafe_allow_html=True)
+        if st.button("🎓  Open PYQ Practice", use_container_width=True, key="home_pyq"):
+            st.session_state.page = "pyq"
+            st.rerun()
+    st.markdown('<div class="section-label">Quick Settings</div>', unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
+    with c1:
+        st.selectbox("🌐 Default language", LANGUAGES, key="language")
+    with c2:
+        st.markdown('<div class="soft-panel"><span class="small-muted">Question count</span><br><b>10 to 300 questions</b><br><span class="small-muted">Available according to PDF/source content and API limits.</span></div>', unsafe_allow_html=True)
+    st.caption("Tip: Large quizzes are generated in batches. They may take longer and depend on your Gemini API quota.")
+    footer()
+
+
+def render_pdf_page() -> None:
+    header()
+    if st.button("← Back to home", key="back_pdf"):
+        st.session_state.page = "home"
+        st.rerun()
+    st.title("📄 PDF to Quiz Generate")
+    st.write("PDF upload करो और उससे practice quiz बनाओ।")
+    with st.form("pdf_quiz_form"):
+        pdf = st.file_uploader("अपनी PDF चुनें", type=["pdf"], key="source_pdf")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            count = st.selectbox("Number of questions", QUESTION_COUNTS, index=8)
+        with col2:
+            minutes = st.selectbox("Time limit", [0, 10, 15, 20, 30, 45, 60, 90, 120, 180], index=4, format_func=lambda x: "No limit" if x == 0 else f"{x} minutes")
+        with col3:
+            language = st.selectbox("Quiz language", LANGUAGES, index=LANGUAGES.index(st.session_state.language))
+        difficulty = st.selectbox("Difficulty", ["Mixed (easy + medium + hard)", "Easy", "Medium", "Hard"])
+        submitted = st.form_submit_button("✨ Generate Quiz", use_container_width=True)
+    if submitted:
+        if not pdf:
+            st.error("पहले PDF upload करें।")
+        else:
+            try:
+                with st.spinner("PDF पढ़ी जा रही है और quiz तैयार हो रही है… बड़े quiz में थोड़ा समय लग सकता है।"):
+                    text = extract_pdf_text(pdf)
+                    questions = generate_quiz_from_pdf(text, int(count), language, difficulty)
+                st.session_state.language = language
+                start_quiz(questions, f"PDF Quiz — {pdf.name}", "PDF Quiz", int(minutes), "pdf")
+            except Exception as exc:
+                st.error(str(exc))
+                st.info("अगर Gemini 503/429 error आए, कुछ देर बाद कोशिश करें और API quota/model settings जाँचें।")
+    footer()
+
+
+def render_pyq_page() -> None:
+    header()
+    if st.button("← Back to home", key="back_pyq"):
+        st.session_state.page = "home"
+        st.rerun()
+st.title("🎓 PYQ Practice")
+    st.write("अपना वास्तविक question paper upload करें या AI से exam-style practice questions बनवाएँ।")
+    tab1, tab2 = st.tabs(["Upload PYQ Paper", "AI PYQ-Style Practice"])
+    with tab1:
+        st.info("यहाँ आपके upload किए हुए paper के प्रश्न इस्तेमाल होंगे। Official answer key upload नहीं है, तो AI द्वारा solve किए गए उत्तर को official नहीं माना जाएगा।")
+        with st.form("pyq_upload_form"):
+            paper = st.file_uploader("Question paper PDF", type=["pdf"], key="pyq_paper")
+            answer_key = st.file_uploader("Official answer key (optional PDF)", type=["pdf"], key="pyq_key")
+            col1, col2 = st.columns(2)
+            with col1:
+                pyq_count = st.selectbox("Questions to practice", QUESTION_COUNTS, index=4, key="pyq_upload_count")
+            with col2:
+                pyq_language = st.selectbox("Quiz language", LANGUAGES, index=LANGUAGES.index(st.session_state.language), key="pyq_upload_language")
+            pyq_minutes = st.selectbox("Time limit", [0, 10, 15, 20, 30, 45, 60, 90, 120], index=3, format_func=lambda x: "No limit" if x == 0 else f"{x} minutes", key="pyq_upload_minutes")
+            parse_btn = st.form_submit_button("📘 Start Uploaded PYQ", use_container_width=True)
+        if parse_btn:
+            if not paper:
+                st.error("पहले question paper PDF upload करें।")
+            else:
+                try:
+                    with st.spinner("Paper और answer key पढ़ी जा रही है…"):
+                        paper_text = extract_pdf_text(paper)
+                        key_text = extract_pdf_text(answer_key) if answer_key else ""
+                        questions = parse_uploaded_pyq(paper_text, key_text, pyq_language, int(pyq_count))
+                    st.session_state.language = pyq_language
+                    title = f"Uploaded PYQ — {paper.name}"
+                    start_quiz(questions, title, "Uploaded PYQ", int(pyq_minutes), "pyq_upload")
+                except Exception as exc:
+                    st.error(str(exc))
+    with tab2:
+        st.warning("ये AI-generated PYQ-style questions होंगे, verified actual previous-year questions नहीं।")
+        with st.form("pyq_style_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                exam = st.selectbox("Exam", ["SSC CGL", "SSC CHSL", "UPSC / State PCS", "NEET", "JEE", "Railway", "Banking", "School / Board", "Other"])
+                subject = st.text_input("Subject / topic", placeholder="जैसे Polity, Biology, Physics")
+            with col2:
+                style_count = st.selectbox("Number of questions", QUESTION_COUNTS, index=4, key="style_count")
+                style_language = st.selectbox("Quiz language", LANGUAGES, index=LANGUAGES.index(st.session_state.language), key="style_language")
+            style_difficulty = st.selectbox("Difficulty", ["Mixed (easy + medium + hard)", "Easy", "Medium", "Hard"], key="style_difficulty")
+            style_minutes = st.selectbox("Time limit", [0, 10, 15, 20, 30, 45, 60, 90, 120], index=3, format_func=lambda x: "No limit" if x == 0 else f"{x} minutes", key="style_minutes")
+            style_btn = st.form_submit_button("⚡ Generate Practice Questions", use_container_width=True)
+        if style_btn:
+            if not subject.strip():
+                st.error("Subject या topic लिखें।")
+            else:
+                try:
+                    with st.spinner("Practice questions तैयार हो रहे हैं…"):
+                        questions = generate_pyq_style(int(style_count), style_language, exam, subject.strip(), style_difficulty)
+                    st.session_state.language = style_language
+                    start_quiz(questions, f"{exam} — {subject.strip()} Practice", "AI-generated PYQ-style practice", int(style_minutes), "pyq_style")
+                except Exception as exc:
+                    st.error(str(exc))
+    footer()
+
+
+def render_quiz_page() -> None:
+    header()
+    qs = st.session_state.quiz
+    if not qs:
+        st.warning("अभी कोई quiz active नहीं है।")
+        if st.button("Go to home"):
+            st.session_state.page = "home"
+            st.rerun()
+        return
+    if st.session_state.quiz_mode == "pyq_style":
+        st.warning("AI-generated PYQ-style practice — verified actual previous-year paper नहीं।")
+    elif st.session_state.quiz_mode == "pyq_upload":
+        st.info("Uploaded PYQ paper. Answer basis is shown in each solution when available.")
+    st.title(st.session_state.quiz_title)
+    top1, top2, top3 = st.columns(3)
+    top1.metric("Questions", len(qs))
+    top2.metric("Answered", sum(1 for q in qs if st.session_state.answers.get(q["id"]) is not None))
+    top3.metric("Remaining", sum(1 for q in qs if st.session_state.answers.get(q["id"]) is None))
+    show_timer()
+    # Language can be changed during a quiz; answer selections are stored separately and preserved.
+    selected_language = st.selectbox("🌐 Quiz language", LANGUAGES, index=LANGUAGES.index(st.session_state.language), key="active_quiz_language")
+    if selected_language != st.session_state.language:
+        try:
+            with st.spinner("Quiz की language बदली जा रही है… आपके answers और timer सुरक्षित रहेंगे।"):
+                translated_questions = translate_quiz_questions(qs, selected_language)
+            st.session_state.quiz = translated_questions
+            st.session_state.language = selected_language
+            st.rerun()
+        except Exception as exc:
+            st.error(f"Language बदल नहीं पाई: {exc}")
+            st.info("आपके selected answers और timer सुरक्षित हैं। थोड़ी देर बाद फिर कोशिश करें।")
+    st.progress(sum(1 for q in qs if st.session_state.answers.get(q["id"]) is not None) / len(qs))
+    if not st.session_state.quiz_submitted:
+        idx = max(0, min(int(st.session_state.question_index), len(qs) - 1))
+        q = qs[idx]
+        st.markdown(f'<div class="question-box"><div class="small-muted">QUESTION {idx + 1} OF {len(qs)}</div><h4 style="color:#fff; margin:.55rem 0;">{q["question"]}</h4></div>', unsafe_allow_html=True)
+        current = st.session_state.answers.get(q["id"])
+        choice = st.radio(
+            "अपना उत्तर चुनें:",
+            options=list(range(len(q["options"]))),
+            format_func=lambda n, opts=q["options"]: f"{chr(65+n)}. {opts[n]}",
+            index=current if current is not None and current < len(q["options"]) else None,
+            key=f"answer_{q['id']}",
+            label_visibility="collapsed",
+        )
+        st.session_state.answers[q["id"]] = choice
+        if q.get("answer_basis"):
+            st.caption(f"Answer basis: {q['answer_basis']}")
+        with st.expander("💡 Hint / quick note"):
+            st.write("पहले question के सभी options को ध्यान से compare करें। Submit करने के बाद सही उत्तर और detailed solution दिखाई देंगे।")
+        st.divider()
+        nav1, nav2, nav3 = st.columns([1, 1, 1])
+        with nav1:
+            if st.button("← Previous", disabled=(idx == 0), use_container_width=True, key="previous_question"):
+                st.session_state.question_index = idx - 1
+                st.rerun()
+        with nav2:
+            if idx < len(qs) - 1:
+                if st.button("Next →", use_container_width=True, key="next_question"):
+                    st.session_state.question_index = idx + 1
+                    st.rerun()
+            else:
+                if st.button("Submit Quiz", type="primary", use_container_width=True, key="submit_last_question"):
+                    st.session_state.quiz_submitted = True
+                    st.rerun()
+        with nav3:
+            if st.button("Submit Quiz", type="primary", use_container_width=True, key="submit_quiz_anytime"):
+                st.session_state.quiz_submitted = True
+                st.rerun()
+        st.caption(f"Answered: {sum(1 for item in qs if st.session_state.answers.get(item['id']) is not None)} / {len(qs)}")
+    else:
+        results = calculate_results()
+        st.success("Quiz complete! यहाँ तुम्हारा result है।")
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("Score", f"{len(results['correct'])} / {len(qs)}")
+        m2.metric("Correct", len(results["correct"]))
+        m3.metric("Wrong", len(results["wrong"]))
+        m4.metric("Accuracy", f"{results['accuracy']:.1f}%")
+        st.caption(f"Attempted: {results['attempted']} · Skipped: {len(results['skipped'])}")
+        review_tab1, review_tab2, review_tab3, review_tab4 = st.tabs(["All Questions", "✅ Correct", "❌ Wrong", "⏭️ Skipped"])
+        groups = [(review_tab1, qs, "All questions"), (review_tab2, results["correct"], "Correct answers"), (review_tab3, results["wrong"], "Wrong answers"), (review_tab4, results["skipped"], "Skipped questions")]
+        for tab, group, label in groups:
+            with tab:
+                if not group:
+                    st.info(f"{label}: कोई प्रश्न नहीं।")
+                for q in group:
+                    idx = qs.index(q) + 1
+                    chosen = st.session_state.answers.get(q["id"])
+                    st.markdown(f"**Q{idx}. {q['question']}**")
+                    if chosen is None:
+                        st.write("तुम्हारा उत्तर: छोड़ा गया")
+                    else:
+                        st.write(f"तुम्हारा उत्तर: {chr(65+chosen)}. {q['options'][chosen]}")
+                    correct_index = int(q["answer_index"])
+                    st.write(f"सही उत्तर: {chr(65+correct_index)}. {q['options'][correct_index]}")
+                    if q.get("answer_basis"):
+                        st.caption(f"Answer basis: {q['answer_basis']}")
+                    with st.expander("📖 Detailed solution / concept explanation", expanded=(label == "Wrong answers")):
+                        st.write(q["explanation"])
+                    st.divider()
+        if st.button("🏠 Back to Home", type="primary", use_container_width=True):
+            st.session_state.page = "home"
+            st.session_state.quiz = []
+            st.session_state.answers = {}
+            st.session_state.quiz_submitted = False
+            st.rerun()
+        if st.button("🔁 Retake same quiz", use_container_width=True):
+            st.session_state.answers = {}
+            st.session_state.quiz_started_at = time.time()
+            st.session_state.quiz_submitted = False
+            st.rerun()
+    footer()
+
+
+# ------------------------------ App routing ----------------------------------
+if st.session_state.page == "home":
+    render_home()
+elif st.session_state.page == "pdf":
+    render_pdf_page()
+elif st.session_state.page == "pyq":
+    render_pyq_page()
+elif st.session_state.page == "quiz":
+    render_quiz_page()
+else:
+    st.session_state.page = "home"
+    st.rerun()
