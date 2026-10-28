@@ -710,12 +710,12 @@ else:
 
 st.markdown("**💡 समाधान / Explanation**")
 
-            st.write(
-                q.get(
-                    "explanation",
-                    "इस प्रश्न का समाधान उपलब्ध नहीं है।"
-                )
-            )
+st.write(
+    q.get(
+        "explanation",
+        "इस प्रश्न का समाधान उपलब्ध नहीं है।"
+    )
+)
 
     st.markdown(
         "<div style='text-align:center;color:#9baed2;padding:18px'>"
