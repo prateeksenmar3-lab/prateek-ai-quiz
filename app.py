@@ -134,7 +134,8 @@ Rules:
     }}
   ]
 }}
-    Study material:
+
+Study material:
 {pdf_text[:45000]}
 """
     # Try multiple currently documented Gemini text models. A 503/429 on
@@ -248,7 +249,7 @@ OUTPUT TO REPAIR:
             continue
         options = [str(option).strip() for option in options]
         if (
-                isinstance(question_text, str)
+            isinstance(question_text, str)
             and question_text.strip()
             and len(options) == 4
             and all(options)
@@ -448,7 +449,7 @@ def show_exam_folder():
 
 if st.session_state.section == "PDF to Quiz":
     st.markdown("""
-    <div class="brandbar">
+    <div class=""brandbar">
       <div><div class="brandname">🧠 AI Quiz <span>Maker</span></div><div class="brandsub">By Prateek Senmar 👑</div></div>
       <div style="text-align:right"><div style="font-weight:750;color:#f3f5ff">Prateek Senmar</div><div class="brandsub">Build Better • Learn Faster</div></div>
     </div>
@@ -625,7 +626,7 @@ if st.session_state.questions is None:
                         )
                         st.stop()
                     questions = make_quiz(pdf_text, count, language, topic)
-    st.session_state.questions = questions
+                st.session_state.questions = questions
                 st.session_state.answers = {}
                 st.session_state.submitted = False
                 st.session_state.duration_minutes = duration
@@ -753,7 +754,7 @@ else:
     st.caption("Har question ka status, aapka answer, correct answer aur explanation dekhein.")
     st.caption("सही, गलत और छोड़े गए—सभी प्रश्नों के उत्तर और explanations नीचे हैं।")
 
-for i, q in enumerate(questions):
+    for i, q in enumerate(questions):
         chosen = answers.get(i)
         is_skipped = chosen is None
         is_correct = chosen == q["answer"]
@@ -788,6 +789,9 @@ for i, q in enumerate(questions):
             previous_mode = st.session_state.get("quiz_mode", "pdf")
             reset_quiz()
             st.session_state.section = "PYQ Practice" if previous_mode == "ai_practice" else "PDF to Quiz"
+            st.rerun()
+    with right:
+        if st.button("⬆️ Result ke Top par", use_container_width=True):
             st.rerun()
     with right:
         if st.button("⬆️ Result ke Top par", use_container_width=True):
