@@ -58,7 +58,7 @@ if not api_key:
     st.stop()
 
 client = genai.Client(api_key=api_key)
-MODEL = "gemini-2.5-flash"
+MODEL = "gemini-3.8-flash"
 
 # --------------------------------------------------
 # PDF HELPERS
