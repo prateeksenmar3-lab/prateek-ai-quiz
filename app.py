@@ -706,16 +706,25 @@ else:
 
             st.markdown(
                 f"**सही उत्तर:** {q['answer']}"
+                        )
+
+            st.markdown(
+                f"**आपका उत्तर:** "
+                f"{chosen if chosen is not None else 'उत्तर नहीं दिया / Skipped'}"
             )
 
-st.markdown("**💡 समाधान / Explanation**")
+            st.markdown(
+                f"**सही उत्तर:** {q['answer']}"
+            )
 
-st.write(
-    q.get(
-        "explanation",
-        "इस प्रश्न का समाधान उपलब्ध नहीं है।"
-    )
-)
+            st.markdown("**💡 समाधान / Explanation**")
+
+            st.write(
+                q.get(
+                    "explanation",
+                    "इस प्रश्न का समाधान उपलब्ध नहीं है।"
+                )
+            )
 
     st.markdown(
         "<div style='text-align:center;color:#9baed2;padding:18px'>"
