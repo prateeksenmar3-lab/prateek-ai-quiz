@@ -255,7 +255,7 @@ OUTPUT TO REPAIR:
                 + " | ".join(repair_errors[-2:])
             )
 
-questions = data.get("questions", [])
+    questions = data.get("questions", [])
     if not isinstance(questions, list):
         raise ValueError("AI response mein questions list ka format galat hai.")
 
@@ -456,7 +456,7 @@ EXAM_SUBFOLDERS = {
     "General Knowledge": [("History", "🏛️"), ("Geography", "🌏"), ("Polity", "⚖️"), ("Science", "🔬")],
 }
 
-            def show_exam_folder():
+def show_exam_folder():
     exam_name = st.session_state.get("selected_exam") or "Exam"
     parent = st.session_state.get("folder_parent") or "Home"
     if st.button("← वापस", key="exam_folder_back"):
@@ -698,7 +698,7 @@ elif st.session_state.section == "Coming Soon":
     )
     st.stop()
 
-                # PDF to Quiz section: preserve existing PDF generation, test, and result flow.
+# PDF to Quiz section: preserve existing PDF generation, test, and result flow.
 if st.session_state.section == "PDF to Quiz":
     if st.button("← Home", key="pdf_home"):
         st.session_state.section = "Home"
