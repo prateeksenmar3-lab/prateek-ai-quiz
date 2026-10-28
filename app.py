@@ -18,7 +18,7 @@ except ImportError:
 
 # Prateek Quiz Hub
 APP_NAME = "Prateek Quiz Hub"
-DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
 LANGUAGES = ["हिंदी", "English", "हिंदी + English"]
 QUESTION_COUNTS = [
     10, 15, 20, 25, 30, 40, 50, 75,
