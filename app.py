@@ -100,7 +100,6 @@ def make_quiz(pdf_text, count, language, topic):
         )
 
     client = genai.Client(api_key=st.secrets["GEMINI_API_KEY"])
-    
 
     if language == "हिंदी (देवनागरी)":
         language_rule = (
@@ -135,17 +134,16 @@ Rules:
     }}
   ]
 }}
-
-Study material:
+    Study material:
 {pdf_text[:45000]}
 """
     # Try multiple currently documented Gemini text models. A 503/429 on
     # one model should not immediately stop quiz generation.
     # Use commonly available Gemini models; fallback if one is unavailable/busy.
     model_candidates = [
-        "gemini-3.8-flash",
-        "gemini-3.5-flash-lite",
-        "gemini-3.8-flash",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-lite",
+        "gemini-2.0-flash",
     ]
     response = None
     model_name = model_candidates[0]
@@ -250,7 +248,7 @@ OUTPUT TO REPAIR:
             continue
         options = [str(option).strip() for option in options]
         if (
-            isinstance(question_text, str)
+                isinstance(question_text, str)
             and question_text.strip()
             and len(options) == 4
             and all(options)
@@ -268,6 +266,71 @@ OUTPUT TO REPAIR:
     if not clean_questions:
         raise ValueError("AI se valid questions nahi mile. Dobara try karo.")
     return clean_questions[:count]
+
+
+def make_topic_quiz(exam, subject, topic, difficulty, count, language="हिंदी (देवनागरी)"):
+    """Generate original AI practice questions, never label them as real PYQs."""
+    api_key = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets") else ""
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY Streamlit Cloud ke Secrets mein nahi mili.")
+    client = genai.Client(api_key=api_key)
+    lang_rule = (
+        "Write all questions, options and explanations in natural Hindi using Devanagari script. Avoid Roman Hindi."
+        if language == "हिंदी (देवनागरी)" else
+        "Write all questions, options and explanations in clear English."
+    )
+    prompt = f"""Create exactly {count} original competitive-exam practice MCQs.
+Exam: {exam}
+Subject: {subject}
+Topic: {topic}
+Difficulty: {difficulty}
+{lang_rule}
+Rules: four distinct options per question; answer must exactly match one option; explanations must be accurate, concise and useful; avoid duplicate questions; do not claim these are previous-year questions; do not invent an exam year/date. For analogy questions, ensure the relationship is unambiguous. Return JSON only in this schema:
+{{"questions":[{{"question":"...","options":["A","B","C","D"],"answer":"exact option text","explanation":"..."}}]}}"""
+    models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"]
+    errors = []
+    for model in models:
+        for attempt in range(2):
+            try:
+                response = client.models.generate_content(
+                    model=model, contents=prompt,
+                    config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.35),
+                )
+                raw = (response.text or "").strip()
+                raw = re.sub(r"^```(?:json)?\s*", "", raw, flags=re.I)
+                raw = re.sub(r"\s*```$", "", raw)
+                try:
+                    data = json.loads(raw)
+                except json.JSONDecodeError:
+                    start, end = raw.find("{"), raw.rfind("}")
+                    if start < 0 or end <= start:
+                        raise ValueError("AI response mein valid JSON nahi mila.")
+                    data = json.loads(raw[start:end+1])
+                questions = data.get("questions", []) if isinstance(data, dict) else []
+                cleaned = []
+                for q in questions:
+                    if not isinstance(q, dict):
+                        continue
+                    opts = q.get("options", [])
+                    ans = str(q.get("answer", "")).strip()
+                    question = str(q.get("question", "")).strip()
+                    if isinstance(opts, list):
+                        opts = [str(x).strip() for x in opts]
+                    else:
+                        continue
+                    if question and len(opts) == 4 and len(set(opts)) == 4 and all(opts) and ans in opts:
+                        cleaned.append({"question": question, "options": opts, "answer": ans, "explanation": str(q.get("explanation", "समाधान उपलब्ध नहीं है।")).strip()})
+                if len(cleaned) < count:
+                    raise ValueError(f"AI ne {len(cleaned)} valid questions diye, {count} chahiye the. Dobara generate karein.")
+                return cleaned[:count]
+            except Exception as exc:
+                errors.append(f"{model}: {str(exc)[:180]}")
+                msg = str(exc)
+                if not any(code in msg for code in ("503", "429", "UNAVAILABLE", "RESOURCE_EXHAUSTED", "high demand", "valid JSON", "valid questions")):
+                    break
+                if attempt == 0:
+                    time.sleep(1.2)
+    raise RuntimeError("AI questions nahi ban paye. Thodi der baad dobara try karein. Details: " + " | ".join(errors[-3:]))
 
 def get_result_counts(questions, answers):
     correct = sum(
@@ -421,9 +484,54 @@ elif st.session_state.section == "PYQ Practice":
     if st.button("← Home", key="pyq_home"):
         st.session_state.section = "Home"
         st.rerun()
-    st.markdown("<div class='hero'><small>PREVIOUS YEAR QUESTIONS</small><h1>📝 PYQ Practice</h1><p>अपनी परीक्षा चुनें।</p></div>", unsafe_allow_html=True)
-    show_folder_cards(PYQ_FOLDERS, "pyq", "PYQ Practice")
+    st.markdown("<div class='hero'><small>PYQ + AI PRACTICE</small><h1>📝 PYQ Practice</h1><p>असली PYQ और AI से बने नए प्रश्न अलग-अलग रखें।</p></div>", unsafe_allow_html=True)
+    mode = st.radio("अभ्यास का प्रकार चुनें", ["AI Practice", "Mock Test", "Real PYQ"], horizontal=True, key="practice_mode")
+    if mode == "Real PYQ":
+        st.info("Real PYQ के लिए प्रमाणित प्रश्न-बैंक चाहिए। अभी इस मोड में कोई अप्रमाणित AI प्रश्न असली PYQ के रूप में नहीं दिखाया जाएगा।")
+        st.caption("अगले चरण में सत्यापित प्रश्नों की JSON/डेटाबेस लाइब्रेरी जोड़ी जा सकती है, जिसमें परीक्षा, वर्ष और स्रोत दर्ज हों।")
+        st.stop()
+    st.markdown('<div class="upload-panel">', unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
+    with c1:
+        exam = st.selectbox("एग्जाम", ["SSC CGL", "Railway", "UP Police", "NEET", "UP Board", "VidyaGyan"], key="ai_exam")
+        subject_options = ["Reasoning", "Maths", "English", "General Awareness"] if exam in ["SSC CGL", "Railway", "UP Police"] else (["Biology", "Physics", "Chemistry"] if exam == "NEET" else ["Maths", "Science", "Hindi", "English", "General Knowledge"])
+        subject = st.selectbox("विषय", subject_options, key="ai_subject")
+        topic = st.text_input("टॉपिक", value="Analogy" if subject == "Reasoning" else "", placeholder="जैसे: Analogy, Percentage, Cell Biology")
+    with c2:
+        difficulty = st.selectbox("कठिनाई स्तर", ["आसान", "मध्यम", "कठिन"], index=1, key="ai_difficulty")
+        count = st.selectbox("प्रश्नों की संख्या", [10, 20, 30, 50], index=1, key="ai_count")
+        duration = st.selectbox("टेस्ट का समय", [10, 15, 20, 30, 45, 60], index=2, format_func=lambda x: f"{x} मिनट", key="ai_duration")
+        language = st.selectbox("प्रश्न और समाधान की भाषा", ["हिंदी (देवनागरी)", "English"], key="ai_language")
+    st.markdown('</div>', unsafe_allow_html=True)
+    button_label = "🚀 AI Mock Test बनाओ" if mode == "Mock Test" else "✨ AI Practice प्रश्न बनाओ"
+    if st.button(button_label, type="primary", use_container_width=True, key="generate_ai_practice"):
+        if not topic.strip():
+            st.warning("पहले टॉपिक लिखें।")
+        else:
+            try:
+                with st.spinner(f"{exam} • {subject} • {topic} के प्रश्न बन रहे हैं..."):
+                    generated = make_topic_quiz(exam, subject, topic.strip(), difficulty, count, language)
+                st.session_state.questions = generated
+                st.session_state.answers = {}
+                st.session_state.submitted = False
+                st.session_state.duration_minutes = duration
+                st.session_state.deadline = time.time() + duration * 60
+                st.session_state.source_name = f"AI {mode} · {exam} · {subject} · {topic.strip()} (AI-generated; not PYQ)"
+                st.session_state.quiz_started = True
+                st.session_state.quiz_mode = "ai_practice"
+                st.session_state.section = "AI Practice Quiz"
+                st.rerun()
+            except Exception as e:
+                st.error(f"प्रश्न नहीं बन पाए: {e}")
     st.stop()
+
+elif st.session_state.section == "AI Practice Quiz":
+    if st.session_state.get("questions") is None:
+        st.info("AI Practice शुरू करने के लिए PYQ Practice में जाएँ।")
+        if st.button("PYQ Practice खोलें", key="open_pyq_from_ai"):
+            st.session_state.section = "PYQ Practice"
+            st.rerun()
+        st.stop()
 
 elif st.session_state.section == "Quick Access":
     if st.button("← Home", key="quick_home"):
@@ -464,33 +572,32 @@ if st.session_state.section == "PDF to Quiz":
         st.rerun()
 
 if "submitted" not in st.session_state:
+    st.session_state.submitted = False
+
+if "questions" not in st.session_state:
     st.session_state.questions = None
 
-
-# Upload PDF and create quiz
 if st.session_state.questions is None:
     st.markdown('<div class="upload-panel">', unsafe_allow_html=True)
-    st.subheader("Upload Your PDF")
+    st.subheader("📄 Upload Your PDF")
     st.caption("Choose a PDF file — notes, chapters, or study material.")
-
     uploaded_file = st.file_uploader(
         "PDF file select karo",
         type=["pdf"],
-        help="Text-based PDF sabse achhe se kaam karti hai.",
+        help="Text-based PDF sabse achhe se kaam karta hai.",
     )
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
 
     c1, c2 = st.columns(2)
-
     with c1:
         language = st.selectbox(
             "Questions aur solutions ki language",
             ["हिंदी (देवनागरी)", "English"],
         )
         count = st.selectbox(
-    "Kitne questions chahiye?",
-    [5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 125, 150, 200],
-    index=1,
+            "Kitne questions chahiye?",
+            [5, 10, 15, 20, 25, 30, 40, 50],
+            index=1,
         )
     with c2:
         duration = st.selectbox(
@@ -504,40 +611,30 @@ if st.session_state.questions is None:
             placeholder="Jaise: Chapter 1, important concepts",
         )
 
-    if st.button(
-        "Quiz Banao",
-        type="primary",
-        use_container_width=True,
-    ):
+    if st.button("✨ Quiz Banao", type="primary", use_container_width=True):
         if not uploaded_file:
             st.warning("Pehle apni PDF file upload karo.")
         else:
             try:
-                with st.spinner(
-                    "PDF padhkar questions aur solutions ban rahe hain..."
-                ):
+                with st.spinner("PDF padhkar questions aur solutions ban rahe hain..."):
                     pdf_text = extract_pdf_text(uploaded_file)
-
                     if not pdf_text:
                         st.error(
                             "PDF se text nahi mila. Agar PDF scanned images wali hai, "
                             "to text-based PDF try karo."
                         )
                         st.stop()
-
-                    questions = make_quiz(
-                        pdf_text, count, language, topic
-                    )
-
-                st.session_state.questions = questions
+                    questions = make_quiz(pdf_text, count, language, topic)
+    st.session_state.questions = questions
                 st.session_state.answers = {}
                 st.session_state.submitted = False
                 st.session_state.duration_minutes = duration
                 st.session_state.deadline = time.time() + duration * 60
                 st.session_state.source_name = uploaded_file.name
+                st.session_state.quiz_mode = "pdf"
+                st.session_state.section = "PDF to Quiz"
                 st.session_state.quiz_started = True
                 st.rerun()
-
             except Exception as e:
                 st.error(f"Quiz nahi ban paya: {e}")
                 st.info(
@@ -545,18 +642,13 @@ if st.session_state.questions is None:
                     "API key ko kisi ke saath share mat karna."
                 )
 
-
-# Active test
 elif not st.session_state.submitted:
     questions = st.session_state.questions
     deadline = st.session_state.get("deadline", time.time() + 600)
     remaining = max(0, int(deadline - time.time()))
-
     if remaining == 0:
         for i in range(len(questions)):
-            st.session_state.answers[i] = st.session_state.get(
-                f"answer_{i}"
-            )
+            st.session_state.answers[i] = st.session_state.get(f"answer_{i}")
         st.session_state.submitted = True
         st.rerun()
 
@@ -564,36 +656,23 @@ elif not st.session_state.submitted:
     minutes, seconds = divmod(remaining, 60)
 
     top1, top2 = st.columns([3, 1])
-
     with top1:
-        st.subheader("Practice Test")
-        st.caption(
-            f"PDF: {st.session_state.get('source_name', 'Uploaded PDF')}"
-                )
-
+        st.subheader("📝 Practice Test")
+        st.caption(f"स्रोत: {st.session_state.get('source_name', 'Uploaded PDF')}")
     with top2:
-        st.metric("Bacha hua time", f"{minutes:02d}:{seconds:02d}")
+        st.metric("⏳ Bacha hua time", f"{minutes:02d}:{seconds:02d}")
 
-    total_seconds = max(
-        1, st.session_state.duration_minutes * 60
-    )
     st.progress(
-        max(0.0, min(1.0, 1 - remaining / total_seconds))
+        max(0.0, min(1.0, 1 - remaining / (st.session_state.duration_minutes * 60)))
     )
-    st.caption(
-        f"Total questions: {len(questions)} · Har question ka ek answer select karo."
-    )
+    st.caption(f"Total questions: {len(questions)} · Har question ka ek answer select karo.")
 
     with st.form("quiz_answer_form"):
         for i, q in enumerate(questions):
             st.markdown(
-                f"""<div class="question-card">
-                <b>Question {i+1} of {len(questions)}</b><br><br>
-                {q["question"]}
-                </div>""",
+                f'<div class="question-card"><b>Question {i+1} of {len(questions)}</b><br><br>{q["question"]}</div>',
                 unsafe_allow_html=True,
             )
-
             st.radio(
                 "Ek answer chuno:",
                 options=q["options"],
@@ -601,202 +680,115 @@ elif not st.session_state.submitted:
                 key=f"answer_{i}",
                 label_visibility="collapsed",
             )
-
         submitted = st.form_submit_button(
-            "Test Submit Karo",
+            "✅ Test Submit Karo",
             type="primary",
             use_container_width=True,
         )
 
     if submitted:
         for i in range(len(questions)):
-            st.session_state.answers[i] = st.session_state.get(
-                f"answer_{i}"
-            )
-
+            st.session_state.answers[i] = st.session_state.get(f"answer_{i}")
         st.session_state.submitted = True
         st.rerun()
 
-
-# Result and Analysis Dashboard
 else:
     questions = st.session_state.questions
     answers = st.session_state.get("answers", {})
-
     correct, wrong, skipped, accuracy, percentage = get_result_counts(
         questions, answers
     )
-    total_questions = len(questions)
-    attempted = correct + wrong
 
     st.markdown("""
     <div class="hero">
-      <small>TEST COMPLETED · PERFORMANCE REPORT</small>
-      <h1>Analysis Dashboard</h1>
-      <p>अपनी performance समझो, गलतियों को पहचानो और solutions से revision करो।</p>
+      <small>TEST COMPLETED</small>
+      <h1>📊 Performance Report</h1>
+      <p>Apni performance dekho aur solutions ke saath revise karo.</p>
     </div>
     """, unsafe_allow_html=True)
 
-    # Main score card
-    st.markdown(
-        f"""
-        <div class="score-panel">
-          <div class="score-caption">YOUR FINAL SCORE</div>
-          <div class="score-number">
-            {correct}
-            <span style="font-size:1.3rem;color:#b6c4d8">
-              / {total_questions}
-            </span>
-          </div>
-          <div class="score-note">{percentage:.1f}% marks</div>
-          <div style="color:#b6c4d8;margin-top:8px">
-            Attempted: {attempted} of {total_questions}
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    st.markdown(f"""
+    <div class="score-panel">
+      <div class="score-caption">YOUR FINAL SCORE</div>
+      <div class="score-number">{correct} <span style="font-size:1.3rem;color:#b6c4d8">/ {len(questions)}</span></div>
+      <div class="score-note">{percentage:.1f}% marks</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # Three summary cards
     m1, m2, m3 = st.columns(3)
-
     with m1:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-              <div class="metric-label">Correct / सही</div>
-              <div class="metric-value correct">{correct}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
+        st.markdown(f"""
+        <div class="metric-card">
+          <div class="metric-label">🟢 Correct / सही</div>
+          <div class="metric-value correct">{correct}</div>
+        </div>""", unsafe_allow_html=True)
     with m2:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-              <div class="metric-label">Wrong / गलत</div>
-              <div class="metric-value wrong">{wrong}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
+        st.markdown(f"""
+        <div class="metric-card">
+          <div class="metric-label">🔴 Wrong / गलत</div>
+          <div class="metric-value wrong">{wrong}</div>
+        </div>""", unsafe_allow_html=True)
     with m3:
-        st.markdown(
-            f"""
-            <div class="metric-card">
-              <div class="metric-label">Skipped / छोड़े</div>
-              <div class="metric-value skipped">{skipped}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        st.markdown(f"""
+        <div class="metric-card">
+          <div class="metric-label">⚪ Skipped / छोड़े</div>
+          <div class="metric-value skipped">{skipped}</div>
+        </div>""", unsafe_allow_html=True)
 
     st.write("")
-
-    # Accuracy and overall percentage
     a1, a2 = st.columns(2)
-
-    with a1:
-        st.metric(
-            "Accuracy · Attempted Questions",
-            f"{accuracy:.1f}%",
-            help="सही उत्तर ÷ कुल हल किए गए प्रश्न × 100",
-        )
-
-    with a2:
-        st.metric(
-            "Overall Percentage",
-            f"{percentage:.1f}%",
-            help="सही उत्तर ÷ कुल प्रश्न × 100",
-        )
-
-    st.progress(
-        max(0.0, min(1.0, percentage / 100))
-    )
+    a1.metric("🎯 Accuracy (attempted)", f"{accuracy:.1f}%")
+    a2.metric("📈 Overall percentage", f"{percentage:.1f}%")
+    st.progress(percentage / 100 if percentage else 0.0)
 
     if percentage >= 80:
         st.success("बहुत बढ़िया! इसी तरह अभ्यास जारी रखो।")
     elif percentage >= 50:
-        st.info(
-            "अच्छा प्रयास! नीचे दिए गए solutions देखकर गलतियाँ सुधारो।"
-        )
+        st.info("अच्छा प्रयास! नीचे दिए गए solutions देखकर गलतियाँ सुधारो।")
     else:
-        st.warning(
-            "कोई बात नहीं—solutions ध्यान से पढ़ो और फिर से practice करो।"
-        )
-
-    # Analysis heading
-    st.markdown(
-        """
-        <div class="analysis-heading">
-          <h2 style="margin:0">Question-wise Analysis</h2>
-          <p style="margin:6px 0 0;color:#bdcbe0">
-            प्रत्येक प्रश्न का उत्तर और उसका समाधान अलग-अलग देखें।
-          </p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    # Separate tabs for each result category
-    tab_correct, tab_wrong, tab_skipped = st.tabs([
-        f"सही उत्तर ({correct})",
-        f"गलत उत्तर ({wrong})",
-        f"छोड़े गए ({skipped})",
-    ])
-
-    with tab_correct:
-        st.caption(
-            "जिन प्रश्नों के उत्तर आपने सही दिए हैं।"
-        )
-        show_answer_review(
-            questions, answers, "correct"
-        )
-
-    with tab_wrong:
-        st.caption(
-            "इन प्रश्नों को ध्यान से पढ़ें और सही उत्तर का कारण समझें।"
-        )
-        show_answer_review(
-            questions, answers, "wrong"
-        )
-
-    with tab_skipped:
-        st.caption(
-            "इन प्रश्नों को दोबारा हल करके अपनी तैयारी जाँचें।"
-        )
-        show_answer_review(
-            questions, answers, "skipped"
-        )
-
-    st.markdown(
-        """
-        <div style="text-align:center;color:#9baed2;padding:18px">
-          Made with ❤️ by <b>Prateek Senmar</b>
-          · Your Personal Study Companion
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        st.warning("कोई बात नहीं—solutions ध्यान से पढ़ो और फिर से practice करो।")
 
     st.divider()
+    st.subheader("📚 Answer Review & Solutions")
+    st.caption("Har question ka status, aapka answer, correct answer aur explanation dekhein.")
+    st.caption("सही, गलत और छोड़े गए—सभी प्रश्नों के उत्तर और explanations नीचे हैं।")
 
+for i, q in enumerate(questions):
+        chosen = answers.get(i)
+        is_skipped = chosen is None
+        is_correct = chosen == q["answer"]
+        if is_skipped:
+            status = "SKIPPED · छोड़ा गया"
+            pill_class = "pill-gray"
+        elif is_correct:
+            status = "CORRECT · सही"
+            pill_class = "pill-green"
+        else:
+            status = "WRONG · गलत"
+            pill_class = "pill-red"
+
+        with st.expander(f"Question {i+1}: {status}", expanded=False):
+            st.markdown(f"**प्रश्न:** {q['question']}")
+            st.markdown(
+                f'<span class="pill {pill_class}">{status}</span>',
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                f"**आपका उत्तर:** {chosen if chosen is not None else 'उत्तर नहीं दिया / Skipped'}"
+            )
+            st.markdown(f"**सही उत्तर:** {q['answer']}")
+            st.markdown("**💡 समाधान / Explanation**")
+            st.write(q.get("explanation", "इस प्रश्न का समाधान उपलब्ध नहीं है।"))
+
+    st.markdown("<div style='text-align:center;color:#9baed2;padding:18px'>Made with ❤️ by <b>Prateek Senmar</b> · Your Personal Study Companion</div>", unsafe_allow_html=True)
+    st.divider()
     left, right = st.columns(2)
-
     with left:
-        if st.button(
-            "Naya Test Banao",
-            type="primary",
-            use_container_width=True,
-        ):
+        if st.button("🔁 Naya Test Banao", type="primary", use_container_width=True):
+            previous_mode = st.session_state.get("quiz_mode", "pdf")
             reset_quiz()
+            st.session_state.section = "PYQ Practice" if previous_mode == "ai_practice" else "PDF to Quiz"
             st.rerun()
-
     with right:
-        if st.button(
-            "Result Refresh Karo",
-            use_container_width=True,
-        ):
+        if st.button("⬆️ Result ke Top par", use_container_width=True):
             st.rerun()
