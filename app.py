@@ -79,7 +79,7 @@ div.stButton > button:hover {border-color:#8b5cf6; color:white; box-shadow:0 0 1
 def reset_quiz():
     for key in [
         "questions", "answers", "submitted", "deadline",
-        "duration_minutes", "source_name", "quiz_started",
+        "duration_minutes", "source_name", "quiz_started", "result_history_saved",
     ]:
         st.session_state.pop(key, None)
     for key in list(st.session_state.keys()):
@@ -94,6 +94,26 @@ def extract_pdf_text(uploaded_file):
     return "\n".join(pages).strip()
 
 def make_quiz(pdf_text, count, language, topic):
+    # Large quizzes are generated in smaller batches to reduce output truncation
+    # and API failures. Questions from earlier batches are supplied as exclusions.
+    if count > 50:
+        all_questions = []
+        remaining = int(count)
+        while remaining > 0:
+            batch_size = min(25, remaining)
+            prior_stems = [q.get("question", "") for q in all_questions[-40:]]
+            batch_topic = topic or "Cover the important concepts in the material."
+            if prior_stems:
+                batch_topic += "\nDo NOT repeat these already generated questions; create new questions on different concepts where possible: " + json.dumps(prior_stems, ensure_ascii=False)
+            batch = make_quiz(pdf_text, batch_size, language, batch_topic)
+            all_questions.extend(batch)
+            remaining -= len(batch)
+            if not batch:
+                break
+        if len(all_questions) < count:
+            raise RuntimeError(f"Sirf {len(all_questions)} questions ban paye, jabki {count} chahiye the. 100 ya 150 questions ke saath dobara try karein.")
+        return all_questions[:count]
+
     if "GEMINI_API_KEY" not in st.secrets:
         raise RuntimeError(
             "GEMINI_API_KEY Streamlit Cloud ke Secrets mein nahi mila."
@@ -111,7 +131,7 @@ def make_quiz(pdf_text, count, language, topic):
             "Write every question, option, and explanation in clear English."
         )
 
-    prompt = f"""
+   prompt = f"""
 Create exactly {count} educational multiple-choice questions using the
 provided study material. {language_rule}
 
@@ -141,10 +161,11 @@ Study material:
     # Try multiple currently documented Gemini text models. A 503/429 on
     # one model should not immediately stop quiz generation.
     # Use commonly available Gemini models; fallback if one is unavailable/busy.
+    # Use model IDs currently suggested by the Gemini API error response.
     model_candidates = [
         "gemini-3.8-flash",
+        "gemini-3.7-flash",
         "gemini-3.5-flash-lite",
-        "gemini-3.8-flash",
     ]
     response = None
     model_name = model_candidates[0]
@@ -271,6 +292,21 @@ OUTPUT TO REPAIR:
 
 def make_topic_quiz(exam, subject, topic, difficulty, count, language="हिंदी (देवनागरी)"):
     """Generate original AI practice questions, never label them as real PYQs."""
+    if count > 50:
+        all_questions = []
+        remaining = int(count)
+        while remaining > 0:
+            batch_size = min(25, remaining)
+            previous = [q.get("question", "") for q in all_questions[-40:]]
+            batch_topic = topic
+            if previous:
+                batch_topic += "\nDo not repeat these questions; make fresh questions: " + json.dumps(previous, ensure_ascii=False)
+            batch = make_topic_quiz(exam, subject, batch_topic, difficulty, batch_size, language)
+            all_questions.extend(batch)
+            remaining -= len(batch)
+        if len(all_questions) < count:
+            raise RuntimeError(f"Sirf {len(all_questions)} questions ban paye, jabki {count} chahiye the.")
+        return all_questions[:count]
     api_key = st.secrets.get("GEMINI_API_KEY", "") if hasattr(st, "secrets") else ""
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY Streamlit Cloud ke Secrets mein nahi mili.")
@@ -279,8 +315,8 @@ def make_topic_quiz(exam, subject, topic, difficulty, count, language="हिं
         "Write all questions, options and explanations in natural Hindi using Devanagari script. Avoid Roman Hindi."
         if language == "हिंदी (देवनागरी)" else
         "Write all questions, options and explanations in clear English."
-    )
-    prompt = f"""Create exactly {count} original competitive-exam practice MCQs.
+)
+            prompt = f"""Create exactly {count} original competitive-exam practice MCQs.
 Exam: {exam}
 Subject: {subject}
 Topic: {topic}
@@ -288,7 +324,7 @@ Difficulty: {difficulty}
 {lang_rule}
 Rules: four distinct options per question; answer must exactly match one option; explanations must be accurate, concise and useful; avoid duplicate questions; do not claim these are previous-year questions; do not invent an exam year/date. For analogy questions, ensure the relationship is unambiguous. Return JSON only in this schema:
 {{"questions":[{{"question":"...","options":["A","B","C","D"],"answer":"exact option text","explanation":"..."}}]}}"""
-    models = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash"]
+    models = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite"]
     errors = []
     for model in models:
         for attempt in range(2):
@@ -449,7 +485,7 @@ def show_exam_folder():
 
 if st.session_state.section == "PDF to Quiz":
     st.markdown("""
-    <div class=""brandbar">
+    <div class="brandbar">
       <div><div class="brandname">🧠 AI Quiz <span>Maker</span></div><div class="brandsub">By Prateek Senmar 👑</div></div>
       <div style="text-align:right"><div style="font-weight:750;color:#f3f5ff">Prateek Senmar</div><div class="brandsub">Build Better • Learn Faster</div></div>
     </div>
@@ -460,25 +496,120 @@ if st.session_state.section == "PDF to Quiz":
       <p style="margin-top:12px;color:#8fc8ff">⚡ Quiz Generation　　🧠 AI Powered　　📘 Detailed Solutions　　🎯 Track Progress</p>
     </div>
     """, unsafe_allow_html=True)
+    if st.session_state.get("questions") is None:
+        pdf_mode = st.selectbox(
+            "PDF to Quiz सेक्शन चुनें",
+            ["PDF Practice Quiz", "PDF Mock Test", "Performance Analysis"],
+            key="pdf_mode_choice",
+            help="PDF से अभ्यास, PDF Mock Test या अपने टेस्ट का Analysis चुनें। PYQ Practice और AI Practice अलग-अलग मुख्य सेक्शन हैं।",
+        )
+        if pdf_mode == "Performance Analysis":
+            st.session_state.section = "Performance Analysis"
+            st.rerun()
+        else:
+            st.session_state.pdf_test_mode = pdf_mode
 
 if st.session_state.section == "Home":
     st.markdown("<div class='hero'><small>YOUR STUDY SPACE</small><h1>Prateek Quiz Hub</h1><p>अपना फ़ोल्डर खोलें और पढ़ाई शुरू करें।</p></div>", unsafe_allow_html=True)
-    cols = st.columns(3)
     cards = [
-        ("📄", "PDF to Quiz", "अपनी PDF से MCQ और solutions बनाएँ।"),
-        ("📝", "PYQ Practice", "परीक्षा के अनुसार प्रश्नों के फ़ोल्डर।"),
+        ("📄", "PDF to Quiz", "अपनी PDF से MCQ, Mock Test और solutions बनाएँ।"),
+        ("📝", "PYQ Practice", "पिछले वर्षों के प्रश्नों और मौजूदा PYQ अभ्यास सेक्शन को खोलें।"),
+        ("🧠", "AI Practice", "Gemini से नए topic-wise MCQ और Mock Test बनाएँ।"),
         ("⚡", "Quick Access", "सभी परीक्षाओं और विषयों के फ़ोल्डर।"),
+        ("📊", "Performance Analysis", "पिछले टेस्ट, स्कोर और accuracy देखें।"),
     ]
-    for col, (emoji, title, desc) in zip(cols, cards):
-        with col:
-            st.markdown(
-                f"<div class='feature-card'><div style='font-size:2.3rem'>{emoji}</div><h3>{title}</h3><p>{desc}</p></div>",
-                unsafe_allow_html=True,
-            )
-            if st.button(f"{emoji}  {title} खोलें", key=f"open_{title}", use_container_width=True, type="primary"):
-                st.session_state.section = title
-                st.session_state.selected_exam = None
+    for row_start in range(0, len(cards), 3):
+        cols = st.columns(3)
+        for col, (emoji, title, desc) in zip(cols, cards[row_start:row_start + 3]):
+            with col:
+                st.markdown(
+                    f"<div class='feature-card'><div style='font-size:2.3rem'>{emoji}</div><h3>{title}</h3><p>{desc}</p></div>",
+                    unsafe_allow_html=True,
+                )
+                if st.button(f"{emoji}  {title} खोलें", key=f"open_{title}", use_container_width=True, type="primary"):
+                    st.session_state.section = title
+                    st.session_state.selected_exam = None
+                    st.rerun()
+    st.stop()
+
+elif st.session_state.section == "Performance Analysis":
+    if st.button("← Home", key="analysis_home"):
+        st.session_state.section = "Home"
+        st.rerun()
+    st.markdown("<div class='hero'><small>YOUR PROGRESS</small><h1>📊 Performance Analysis</h1><p>अपने हाल के टेस्ट, स्कोर और accuracy की तुलना करें।</p></div>", unsafe_allow_html=True)
+    history = st.session_state.get("result_history", [])
+    if not history:
+        st.info("अभी कोई टेस्ट पूरा नहीं हुआ है। पहले PDF Quiz या PYQ Practice का टेस्ट दें; उसके बाद आपका analysis यहाँ दिखेगा।")
+    else:
+        total_tests = len(history)
+        avg_score = sum(item.get("percentage", 0) for item in history) / total_tests
+        best_score = max(item.get("percentage", 0) for item in history)
+        avg_accuracy = sum(item.get("accuracy", 0) for item in history) / total_tests
+        a, b, c, d = st.columns(4)
+        a.metric("कुल टेस्ट", total_tests)
+        b.metric("औसत स्कोर", f"{avg_score:.1f}%")
+        c.metric("सबसे अच्छा स्कोर", f"{best_score:.1f}%")
+        d.metric("औसत Accuracy", f"{avg_accuracy:.1f}%")
+        st.subheader("हाल के टेस्ट")
+        for item in reversed(history[-20:]):
+            with st.expander(f"{item.get('date', 'Test')} · {item.get('title', 'Quiz')} · {item.get('percentage', 0):.1f}%"):
+        m1, m2, m3, m4 = st.columns(4)
+                m1.metric("सही", item.get("correct", 0))
+                m2.metric("गलत", item.get("wrong", 0))
+                m3.metric("छोड़े", item.get("skipped", 0))
+                m4.metric("कुल प्रश्न", item.get("total", 0))
+                st.write(f"Accuracy: {item.get('accuracy', 0):.1f}%")
+        st.caption("नोट: यह इतिहास इसी Streamlit session में सुरक्षित है; ऐप/सेशन रीस्टार्ट होने पर history मिट सकती है।")
+    st.stop()
+
+elif st.session_state.section == "AI Practice":
+    if st.button("← Home", key="ai_home"):
+        st.session_state.section = "Home"
+        st.rerun()
+    st.markdown("<div class='hero'><small>GEMINI POWERED</small><h1>🧠 AI Practice</h1><p>यह PYQ Practice से अलग सेक्शन है। यहाँ Gemini नए अभ्यास प्रश्न बनाएगा; इन्हें असली PYQ नहीं कहा जाएगा।</p></div>", unsafe_allow_html=True)
+    st.markdown('<div class="upload-panel">', unsafe_allow_html=True)
+    c1, c2 = st.columns(2)
+    with c1:
+        exam = st.selectbox("एग्जाम", ["SSC CGL", "Railway", "UP Police", "NEET", "UP Board", "VidyaGyan", "UPSC", "Other"], key="standalone_ai_exam")
+        if exam in ["SSC CGL", "Railway", "UP Police"]:
+            subject_options = ["Reasoning", "Maths", "English", "General Awareness"]
+        elif exam == "NEET":
+            subject_options = ["Biology", "Physics", "Chemistry"]
+        elif exam == "UPSC":
+            subject_options = ["History", "Geography", "Polity", "Economy", "Science", "Current Affairs"]
+        elif exam == "UP Board":
+            subject_options = ["Maths", "Science", "Hindi", "English", "General Knowledge"]
+        else:
+            subject_options = ["Reasoning", "Maths", "English", "General Awareness", "Science"]
+        subject = st.selectbox("विषय", subject_options, key="standalone_ai_subject")
+        topic = st.text_input("टॉपिक", placeholder="जैसे: Analogy, Percentage, Cell Biology", key="standalone_ai_topic")
+    with c2:
+        difficulty = st.selectbox("कठिनाई स्तर", ["आसान", "मध्यम", "कठिन"], index=1, key="standalone_ai_difficulty")
+        count = st.selectbox("प्रश्नों की संख्या", [10, 20, 30, 50, 75, 100, 150, 200, 250, 300], index=1, key="standalone_ai_count")
+        duration = st.selectbox("टेस्ट का समय", [10, 15, 20, 30, 45, 60, 90, 120, 180, 240], index=2, format_func=lambda x: f"{x} मिनट", key="standalone_ai_duration")
+        language = st.selectbox("प्रश्न और समाधान की भाषा", ["हिंदी (देवनागरी)", "English"], key="standalone_ai_language")
+    st.markdown('</div>', unsafe_allow_html=True)
+    ai_mode = st.radio("टेस्ट का प्रकार", ["AI Practice Quiz", "AI Mock Test"], horizontal=True, key="standalone_ai_mode")
+    if st.button("✨ AI प्रश्न बनाओ", type="primary", use_container_width=True, key="generate_standalone_ai"):
+        if not topic.strip():
+            st.warning("पहले टॉपिक लिखें।")
+        else:
+            try:
+                with st.spinner(f"{exam} • {subject} • {topic.strip()} के प्रश्न बन रहे हैं..."):
+                    generated = make_topic_quiz(exam, subject, topic.strip(), difficulty, count, language)
+                st.session_state.questions = generated
+                st.session_state.answers = {}
+                st.session_state.submitted = False
+                st.session_state.duration_minutes = duration
+                st.session_state.deadline = time.time() + duration * 60
+                st.session_state.source_name = f"{ai_mode} · {exam} · {subject} · {topic.strip()} (AI-generated; not PYQ)"
+                st.session_state.quiz_started = True
+                st.session_state.quiz_mode = "ai_practice"
+                st.session_state.result_history_saved = False
+                st.session_state.section = "AI Practice Quiz"
                 st.rerun()
+            except Exception as e:
+                st.error(f"प्रश्न नहीं बन पाए: {e}")
     st.stop()
 
 elif st.session_state.section == "PYQ Practice":
@@ -500,8 +631,8 @@ elif st.session_state.section == "PYQ Practice":
         topic = st.text_input("टॉपिक", value="Analogy" if subject == "Reasoning" else "", placeholder="जैसे: Analogy, Percentage, Cell Biology")
     with c2:
         difficulty = st.selectbox("कठिनाई स्तर", ["आसान", "मध्यम", "कठिन"], index=1, key="ai_difficulty")
-        count = st.selectbox("प्रश्नों की संख्या", [10, 20, 30, 50], index=1, key="ai_count")
-        duration = st.selectbox("टेस्ट का समय", [10, 15, 20, 30, 45, 60], index=2, format_func=lambda x: f"{x} मिनट", key="ai_duration")
+        count = st.selectbox("प्रश्नों की संख्या", [10, 20, 30, 50, 75, 100, 150, 200], index=1, key="ai_count")
+        duration = st.selectbox("टेस्ट का समय", [10, 15, 20, 30, 45, 60, 90, 120, 180, 240], index=2, format_func=lambda x: f"{x} मिनट", key="ai_duration")
         language = st.selectbox("प्रश्न और समाधान की भाषा", ["हिंदी (देवनागरी)", "English"], key="ai_language")
     st.markdown('</div>', unsafe_allow_html=True)
     button_label = "🚀 AI Mock Test बनाओ" if mode == "Mock Test" else "✨ AI Practice प्रश्न बनाओ"
@@ -520,6 +651,7 @@ elif st.session_state.section == "PYQ Practice":
                 st.session_state.source_name = f"AI {mode} · {exam} · {subject} · {topic.strip()} (AI-generated; not PYQ)"
                 st.session_state.quiz_started = True
                 st.session_state.quiz_mode = "ai_practice"
+                st.session_state.result_history_saved = False
                 st.session_state.section = "AI Practice Quiz"
                 st.rerun()
             except Exception as e:
@@ -528,9 +660,9 @@ elif st.session_state.section == "PYQ Practice":
 
 elif st.session_state.section == "AI Practice Quiz":
     if st.session_state.get("questions") is None:
-        st.info("AI Practice शुरू करने के लिए PYQ Practice में जाएँ।")
-        if st.button("PYQ Practice खोलें", key="open_pyq_from_ai"):
-            st.session_state.section = "PYQ Practice"
+        st.info("AI Practice शुरू करने के लिए AI Practice सेक्शन में जाएँ।")
+        if st.button("AI Practice खोलें", key="open_ai_from_quiz"):
+            st.session_state.section = "AI Practice"
             st.rerun()
         st.stop()
 
@@ -597,13 +729,13 @@ if st.session_state.questions is None:
         )
         count = st.selectbox(
             "Kitne questions chahiye?",
-            [5, 10, 15, 20, 25, 30, 40, 50],
+            [5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 150, 200, 250, 300],
             index=1,
         )
     with c2:
         duration = st.selectbox(
             "Test ka time",
-            [5, 10, 15, 20, 30, 45, 60, 90, 120, 180],
+            [5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240],
             index=2,
             format_func=lambda x: f"{x} minute",
         )
@@ -632,7 +764,8 @@ if st.session_state.questions is None:
                 st.session_state.duration_minutes = duration
                 st.session_state.deadline = time.time() + duration * 60
                 st.session_state.source_name = uploaded_file.name
-                st.session_state.quiz_mode = "pdf"
+                st.session_state.quiz_mode = "pdf_mock" if st.session_state.get("pdf_test_mode") == "PDF Mock Test" else "pdf"
+                st.session_state.result_history_saved = False
                 st.session_state.section = "PDF to Quiz"
                 st.session_state.quiz_started = True
                 st.rerun()
@@ -653,7 +786,7 @@ elif not st.session_state.submitted:
         st.session_state.submitted = True
         st.rerun()
 
-    st_autorefresh(interval=1000, key="quiz_timer_refresh")
+st_autorefresh(interval=1000, key="quiz_timer_refresh")
     minutes, seconds = divmod(remaining, 60)
 
     top1, top2 = st.columns([3, 1])
@@ -699,11 +832,26 @@ else:
     correct, wrong, skipped, accuracy, percentage = get_result_counts(
         questions, answers
     )
+    if not st.session_state.get("result_history_saved", False):
+        history = st.session_state.get("result_history", [])
+        history.append({
+            "date": time.strftime("%d-%m-%Y %H:%M"),
+            "title": st.session_state.get("source_name", "Quiz"),
+            "correct": correct,
+            "wrong": wrong,
+            "skipped": skipped,
+            "total": len(questions),
+            "accuracy": accuracy,
+            "percentage": percentage,
+            "mode": st.session_state.get("quiz_mode", "pdf"),
+        })
+        st.session_state.result_history = history[-50:]
+        st.session_state.result_history_saved = True
 
     st.markdown("""
     <div class="hero">
       <small>TEST COMPLETED</small>
-      <h1>📊 Performance Report</h1>
+      <h1>📊 Test Result & Analysis</h1>
       <p>Apni performance dekho aur solutions ke saath revise karo.</p>
     </div>
     """, unsafe_allow_html=True)
@@ -783,15 +931,16 @@ else:
 
     st.markdown("<div style='text-align:center;color:#9baed2;padding:18px'>Made with ❤️ by <b>Prateek Senmar</b> · Your Personal Study Companion</div>", unsafe_allow_html=True)
     st.divider()
-    left, right = st.columns(2)
+    left, middle, right = st.columns(3)
     with left:
         if st.button("🔁 Naya Test Banao", type="primary", use_container_width=True):
             previous_mode = st.session_state.get("quiz_mode", "pdf")
             reset_quiz()
-            st.session_state.section = "PYQ Practice" if previous_mode == "ai_practice" else "PDF to Quiz"
+            st.session_state.section = "AI Practice" if previous_mode == "ai_practice" else "PDF to Quiz"
             st.rerun()
-    with right:
-        if st.button("⬆️ Result ke Top par", use_container_width=True):
+    with middle:
+        if st.button("📊 पूरा Analysis", use_container_width=True):
+            st.session_state.section = "Performance Analysis"
             st.rerun()
     with right:
         if st.button("⬆️ Result ke Top par", use_container_width=True):
