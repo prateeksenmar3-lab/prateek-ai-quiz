@@ -142,9 +142,9 @@ Study material:
     # one model should not immediately stop quiz generation.
     # Use commonly available Gemini models; fallback if one is unavailable/busy.
     model_candidates = [
-        "gemini-2.5-flash",
-        "gemini-2.5-flash-lite",
-        "gemini-2.0-flash",
+        "gemini-3.8-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-3.8-flash",
     ]
     response = None
     model_name = model_candidates[0]
