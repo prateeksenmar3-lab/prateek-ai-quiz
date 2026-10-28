@@ -131,7 +131,8 @@ def make_quiz(pdf_text, count, language, topic):
             "Write every question, option, and explanation in clear English."
         )
 
-   prompt = f"""Create exactly {count} educational multiple-choice questions using the
+    prompt = f"""
+Create exactly {count} educational multiple-choice questions using the
 provided study material. {language_rule}
 
 Topic or focus requested by user: {topic if topic else "Cover the important concepts in the material."}
@@ -254,7 +255,7 @@ OUTPUT TO REPAIR:
                 + " | ".join(repair_errors[-2:])
             )
 
-    questions = data.get("questions", [])
+questions = data.get("questions", [])
     if not isinstance(questions, list):
         raise ValueError("AI response mein questions list ka format galat hai.")
 
@@ -314,8 +315,8 @@ def make_topic_quiz(exam, subject, topic, difficulty, count, language="हिं
         "Write all questions, options and explanations in natural Hindi using Devanagari script. Avoid Roman Hindi."
         if language == "हिंदी (देवनागरी)" else
         "Write all questions, options and explanations in clear English."
-)
-            prompt = f"""Create exactly {count} original competitive-exam practice MCQs.
+    )
+    prompt = f"""Create exactly {count} original competitive-exam practice MCQs.
 Exam: {exam}
 Subject: {subject}
 Topic: {topic}
@@ -455,7 +456,7 @@ EXAM_SUBFOLDERS = {
     "General Knowledge": [("History", "🏛️"), ("Geography", "🌏"), ("Polity", "⚖️"), ("Science", "🔬")],
 }
 
-def show_exam_folder():
+            def show_exam_folder():
     exam_name = st.session_state.get("selected_exam") or "Exam"
     parent = st.session_state.get("folder_parent") or "Home"
     if st.button("← वापस", key="exam_folder_back"):
@@ -552,7 +553,7 @@ elif st.session_state.section == "Performance Analysis":
         st.subheader("हाल के टेस्ट")
         for item in reversed(history[-20:]):
             with st.expander(f"{item.get('date', 'Test')} · {item.get('title', 'Quiz')} · {item.get('percentage', 0):.1f}%"):
-        m1, m2, m3, m4 = st.columns(4)
+                m1, m2, m3, m4 = st.columns(4)
                 m1.metric("सही", item.get("correct", 0))
                 m2.metric("गलत", item.get("wrong", 0))
                 m3.metric("छोड़े", item.get("skipped", 0))
@@ -697,7 +698,7 @@ elif st.session_state.section == "Coming Soon":
     )
     st.stop()
 
-# PDF to Quiz section: preserve existing PDF generation, test, and result flow.
+                # PDF to Quiz section: preserve existing PDF generation, test, and result flow.
 if st.session_state.section == "PDF to Quiz":
     if st.button("← Home", key="pdf_home"):
         st.session_state.section = "Home"
@@ -785,7 +786,7 @@ elif not st.session_state.submitted:
         st.session_state.submitted = True
         st.rerun()
 
-st_autorefresh(interval=1000, key="quiz_timer_refresh")
+    st_autorefresh(interval=1000, key="quiz_timer_refresh")
     minutes, seconds = divmod(remaining, 60)
 
     top1, top2 = st.columns([3, 1])
