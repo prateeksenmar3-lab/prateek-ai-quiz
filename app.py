@@ -48,7 +48,7 @@ st.markdown("""
     border-radius: 17px;
     padding: 17px 10px;
     text-align: center;
-    min-height: 112px;
+    min-height: 105px;
 }
 .metric-label { color: #c4b5fd; font-size: 13px; }
 .metric-value { color: white; font-size: 27px; font-weight: 800; }
@@ -62,7 +62,6 @@ st.markdown("""
 }
 .result-banner h1 { color: white; font-size: 34px; }
 .result-banner p { color: #ede9fe; margin-bottom: 4px; }
-.section-title { color: #c4b5fd; font-size: 23px; font-weight: 800; }
 div.stButton > button {
     border-radius: 12px;
     min-height: 44px;
@@ -86,6 +85,8 @@ footer {visibility: hidden;}
 </style>
 """, unsafe_allow_html=True)
 
+
+# SESSION STATE
 defaults = {
     "quiz": [],
     "answers": {},
@@ -139,12 +140,12 @@ Language: Hindi.
 Difficulty: {difficulty}.
 Topic: {topic or "uploaded study material"}.
 
-Use the provided source material.
-Each question must have exactly four options and one correct answer.
+Use the source material.
+Every question must have four options and one correct answer.
 The answer must be an integer from 0 to 3.
-Give a short, useful explanation in Hindi.
+Give a useful explanation in Hindi.
 
-Return only valid JSON in this format:
+Return only valid JSON:
 {{
   "questions": [
     {{
@@ -201,7 +202,7 @@ SOURCE MATERIAL:
 
     if not valid:
         raise ValueError(
-            "Valid questions nahi ban paye. PDF ya topic dobara check karo."
+            "Valid questions nahi ban paye. PDF dobara check karo."
         )
 
     return valid[:count]
@@ -253,8 +254,15 @@ def get_results():
 
     total = len(questions)
     attempted = len(correct) + len(incorrect)
-    score_percent = round((len(correct) / total) * 100) if total else 0
-    accuracy = round((len(correct) / attempted) * 100) if attempted else 0
+
+    score_percent = (
+        round(len(correct) / total * 100) if total else 0
+    )
+
+    accuracy = (
+        round(len(correct) / attempted * 100)
+        if attempted else 0
+    )
 
     return {
         "correct": correct,
@@ -294,7 +302,7 @@ def show_question_review(index, status):
     )
 
     if user_answer is None:
-        st.info("Tumne is question ka answer select nahi kiya tha.")
+        st.info("Is question ka answer select nahi kiya tha.")
     else:
         st.write("**Tumhara answer:** " + q["options"][user_answer])
 
@@ -306,6 +314,7 @@ def show_question_review(index, status):
     st.divider()
 
 
+# HEADER
 st.markdown("""
 <div class="hero">
     <h1>🧠 AI QUIZ MAKER</h1>
@@ -337,7 +346,7 @@ if not st.session_state.started and not st.session_state.finished:
 
     with col2:
         duration = st.selectbox(
-            "Time limit",
+            "Time limit (minutes)",
             [5, 10, 15, 20, 30, 45, 60],
             index=1
         )
@@ -352,8 +361,11 @@ if not st.session_state.started and not st.session_state.finished:
         placeholder="Jaise: Biology, Polity, Physics..."
     )
 
-    if st.button("✨ GENERATE MY QUIZ", type="primary", use_container_width=True):
-
+    if st.button(
+        "✨ GENERATE MY QUIZ",
+        type="primary",
+        use_container_width=True
+    ):
         if uploaded_file is None:
             st.warning("Bhai, pehle PDF upload karo.")
         else:
@@ -367,10 +379,7 @@ if not st.session_state.started and not st.session_state.finished:
                         )
 
                     questions = generate_questions(
-                        pdf_text,
-                        count,
-                        difficulty,
-                        topic
+                        pdf_text, count, difficulty, topic
                     )
 
                     st.session_state.quiz = questions
@@ -379,9 +388,7 @@ if not st.session_state.started and not st.session_state.finished:
                     }
                     st.session_state.index = 0
                     st.session_state.duration = duration
-                    st.session_state.end_time = (
-                        time.time() + duration * 60
-                    )
+                    st.session_state.end_time = time.time() + duration * 60
                     st.session_state.started = True
                     st.session_state.finished = False
 
@@ -394,7 +401,7 @@ if not st.session_state.started and not st.session_state.finished:
     <div class="quiz-card">
         <h3>💜 Your personal study partner</h3>
         <p>PDF se MCQs banao, timer ke saath practice karo
-        aur end mein apna score aur accuracy dekho.</p>
+        aur end mein score aur accuracy dekho.</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -406,6 +413,7 @@ elif st.session_state.started and not st.session_state.finished:
 
     if not questions:
         st.error("Quiz nahi mila. Naya quiz banao.")
+
         if st.button("Home par jao"):
             reset_quiz()
             st.rerun()
@@ -428,10 +436,7 @@ elif st.session_state.started and not st.session_state.finished:
             st.rerun()
 
         st.progress((idx + 1) / len(questions))
-
-        st.caption(
-            f"QUESTION {idx + 1} OF {len(questions)}"
-        )
+        st.caption(f"QUESTION {idx + 1} OF {len(questions)}")
 
         q = questions[idx]
 
@@ -444,6 +449,9 @@ elif st.session_state.started and not st.session_state.finished:
             unsafe_allow_html=True
         )
 
+        # FIXED ANSWER SELECTION
+        # Radio se text milta hai, integer nahi.
+        # Isliye text ko index mein convert kar rahe hain.
         options_with_placeholder = [
             "— Answer choose karo —"
         ] + [
@@ -452,6 +460,7 @@ elif st.session_state.started and not st.session_state.finished:
         ]
 
         previous_answer = st.session_state.answers.get(idx)
+
         radio_index = (
             previous_answer + 1
             if previous_answer is not None
@@ -466,12 +475,17 @@ elif st.session_state.started and not st.session_state.finished:
             label_visibility="collapsed"
         )
 
-        st.session_state.answers[idx] = (
-            choice - 1 if choice != options_with_placeholder[0] else None
-        )
+        # IMPORTANT FIX: choice - 1 nahi karna,
+        # kyunki choice ek string hai.
+        if choice == options_with_placeholder[0]:
+            st.session_state.answers[idx] = None
+        else:
+            st.session_state.answers[idx] = (
+                options_with_placeholder.index(choice) - 1
+            )
 
         st.caption(
-            "Answer select nahi karoge to question skipped count hoga."
+            "Answer select nahi karoge to question Skipped count hoga."
         )
 
         st.divider()
@@ -489,12 +503,18 @@ elif st.session_state.started and not st.session_state.finished:
 
         with next_col:
             if idx < len(questions) - 1:
-                if st.button("Next ➡️", use_container_width=True):
+                if st.button(
+                    "Next ➡️",
+                    use_container_width=True
+                ):
                     st.session_state.index += 1
                     st.rerun()
             else:
-                if st.button("🏁 Finish Quiz", type="primary",
-                              use_container_width=True):
+                if st.button(
+                    "🏁 Finish Quiz",
+                    type="primary",
+                    use_container_width=True
+                ):
                     st.session_state.finished = True
                     st.rerun()
 
@@ -533,7 +553,9 @@ if st.session_state.finished and st.session_state.quiz:
             <div class="metric-card">
                 <div class="metric-label">🏆 YOUR SCORE</div>
                 <div class="metric-value">{correct_count}/{total}</div>
-                <div class="metric-sub">{result["score_percent"]}% of total marks</div>
+                <div class="metric-sub">
+                    {result["score_percent"]}% of total marks
+                </div>
             </div>
             """,
             unsafe_allow_html=True
@@ -545,7 +567,9 @@ if st.session_state.finished and st.session_state.quiz:
             <div class="metric-card">
                 <div class="metric-label">🎯 ACCURACY</div>
                 <div class="metric-value">{result["accuracy"]}%</div>
-                <div class="metric-sub">Correct out of attempted questions</div>
+                <div class="metric-sub">
+                    Correct out of attempted questions
+                </div>
             </div>
             """,
             unsafe_allow_html=True
@@ -598,14 +622,16 @@ if st.session_state.finished and st.session_state.quiz:
     if result["score_percent"] >= 80:
         st.success("🔥 Excellent! Bahut badhiya performance, bhai!")
     elif result["score_percent"] >= 50:
-        st.info("💪 Good effort! Galat questions revise karke score aur badhao.")
+        st.info(
+            "💪 Good effort! Galat questions revise karke score badhao."
+        )
     else:
-        st.warning("📚 Koi baat nahi bhai. Explanations padho aur dobara practice karo.")
+        st.warning(
+            "📚 Koi baat nahi bhai. Explanations padho aur dobara practice karo."
+        )
 
     st.divider()
-
     st.markdown("## 📝 Question Review")
-    st.write("Neeche category select karke questions check karo.")
 
     tab1, tab2, tab3, tab4 = st.tabs([
         "📊 Overview",
@@ -616,7 +642,6 @@ if st.session_state.finished and st.session_state.quiz:
 
     with tab1:
         st.markdown("### Performance Summary")
-
         st.write(f"✅ Correct answers: **{correct_count}**")
         st.write(f"❌ Wrong answers: **{incorrect_count}**")
         st.write(f"⏭️ Skipped questions: **{skipped_count}**")
@@ -631,9 +656,7 @@ if st.session_state.finished and st.session_state.quiz:
         if not result["incorrect"]:
             st.success("🎉 Koi incorrect question nahi hai!")
         else:
-            st.write(
-                f"**{incorrect_count} questions** ko dobara revise karo."
-            )
+            st.write(f"**{incorrect_count} incorrect questions**")
             for i in result["incorrect"]:
                 show_question_review(i, "incorrect")
 
@@ -641,15 +664,13 @@ if st.session_state.finished and st.session_state.quiz:
         if not result["skipped"]:
             st.success("🎉 Koi question skip nahi hua!")
         else:
-            st.write(
-                f"**{skipped_count} skipped questions** yahan hain."
-            )
+            st.write(f"**{skipped_count} skipped questions**")
             for i in result["skipped"]:
                 show_question_review(i, "skipped")
 
     with tab4:
         if not result["correct"]:
-            st.info("Is quiz mein abhi koi correct answer nahi hai.")
+            st.info("Abhi koi correct answer nahi hai.")
         else:
             for i in result["correct"]:
                 show_question_review(i, "correct")
@@ -665,4 +686,3 @@ if st.session_state.finished and st.session_state.quiz:
         st.rerun()
 
     st.caption("Made with 💜 by PRATEEK SENMAR")
-    
