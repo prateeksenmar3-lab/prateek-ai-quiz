@@ -464,32 +464,33 @@ if st.session_state.section == "PDF to Quiz":
         st.rerun()
 
 if "submitted" not in st.session_state:
-    st.session_state.submitted = False
-
-if "questions" not in st.session_state:
     st.session_state.questions = None
 
+
+# Upload PDF and create quiz
 if st.session_state.questions is None:
     st.markdown('<div class="upload-panel">', unsafe_allow_html=True)
-    st.subheader("📄 Upload Your PDF")
+    st.subheader("Upload Your PDF")
     st.caption("Choose a PDF file — notes, chapters, or study material.")
+
     uploaded_file = st.file_uploader(
         "PDF file select karo",
         type=["pdf"],
-        help="Text-based PDF sabse achhe se kaam karta hai.",
+        help="Text-based PDF sabse achhe se kaam karti hai.",
     )
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     c1, c2 = st.columns(2)
+
     with c1:
         language = st.selectbox(
             "Questions aur solutions ki language",
             ["हिंदी (देवनागरी)", "English"],
         )
         count = st.selectbox(
-            "Kitne questions chahiye?",
-            [5, 10, 15, 20, 25, 30, 40, 50],
-            index=1,
+    "Kitne questions chahiye?",
+    [5, 10, 15, 20, 25, 30, 40, 50, 75, 100, 125, 150, 200],
+    index=1,
         )
     with c2:
         duration = st.selectbox(
@@ -503,20 +504,31 @@ if st.session_state.questions is None:
             placeholder="Jaise: Chapter 1, important concepts",
         )
 
-    if st.button("✨ Quiz Banao", type="primary", use_container_width=True):
+    if st.button(
+        "Quiz Banao",
+        type="primary",
+        use_container_width=True,
+    ):
         if not uploaded_file:
             st.warning("Pehle apni PDF file upload karo.")
         else:
             try:
-                with st.spinner("PDF padhkar questions aur solutions ban rahe hain..."):
+                with st.spinner(
+                    "PDF padhkar questions aur solutions ban rahe hain..."
+                ):
                     pdf_text = extract_pdf_text(uploaded_file)
+
                     if not pdf_text:
                         st.error(
                             "PDF se text nahi mila. Agar PDF scanned images wali hai, "
                             "to text-based PDF try karo."
                         )
                         st.stop()
-                    questions = make_quiz(pdf_text, count, language, topic)
+
+                    questions = make_quiz(
+                        pdf_text, count, language, topic
+                    )
+
                 st.session_state.questions = questions
                 st.session_state.answers = {}
                 st.session_state.submitted = False
@@ -525,6 +537,7 @@ if st.session_state.questions is None:
                 st.session_state.source_name = uploaded_file.name
                 st.session_state.quiz_started = True
                 st.rerun()
+
             except Exception as e:
                 st.error(f"Quiz nahi ban paya: {e}")
                 st.info(
@@ -532,13 +545,18 @@ if st.session_state.questions is None:
                     "API key ko kisi ke saath share mat karna."
                 )
 
+
+# Active test
 elif not st.session_state.submitted:
     questions = st.session_state.questions
     deadline = st.session_state.get("deadline", time.time() + 600)
     remaining = max(0, int(deadline - time.time()))
+
     if remaining == 0:
         for i in range(len(questions)):
-            st.session_state.answers[i] = st.session_state.get(f"answer_{i}")
+            st.session_state.answers[i] = st.session_state.get(
+                f"answer_{i}"
+            )
         st.session_state.submitted = True
         st.rerun()
 
@@ -546,23 +564,36 @@ elif not st.session_state.submitted:
     minutes, seconds = divmod(remaining, 60)
 
     top1, top2 = st.columns([3, 1])
-    with top1:
-        st.subheader("📝 Practice Test")
-        st.caption(f"PDF: {st.session_state.get('source_name', 'Uploaded PDF')}")
-    with top2:
-        st.metric("⏳ Bacha hua time", f"{minutes:02d}:{seconds:02d}")
 
-    st.progress(
-        max(0.0, min(1.0, 1 - remaining / (st.session_state.duration_minutes * 60)))
+    with top1:
+        st.subheader("Practice Test")
+        st.caption(
+            f"PDF: {st.session_state.get('source_name', 'Uploaded PDF')}"
+                )
+
+    with top2:
+        st.metric("Bacha hua time", f"{minutes:02d}:{seconds:02d}")
+
+    total_seconds = max(
+        1, st.session_state.duration_minutes * 60
     )
-    st.caption(f"Total questions: {len(questions)} · Har question ka ek answer select karo.")
+    st.progress(
+        max(0.0, min(1.0, 1 - remaining / total_seconds))
+    )
+    st.caption(
+        f"Total questions: {len(questions)} · Har question ka ek answer select karo."
+    )
 
     with st.form("quiz_answer_form"):
         for i, q in enumerate(questions):
             st.markdown(
-                f'<div class="question-card"><b>Question {i+1} of {len(questions)}</b><br><br>{q["question"]}</div>',
+                f"""<div class="question-card">
+                <b>Question {i+1} of {len(questions)}</b><br><br>
+                {q["question"]}
+                </div>""",
                 unsafe_allow_html=True,
             )
+
             st.radio(
                 "Ek answer chuno:",
                 options=q["options"],
@@ -570,113 +601,202 @@ elif not st.session_state.submitted:
                 key=f"answer_{i}",
                 label_visibility="collapsed",
             )
+
         submitted = st.form_submit_button(
-            "✅ Test Submit Karo",
+            "Test Submit Karo",
             type="primary",
             use_container_width=True,
         )
 
     if submitted:
         for i in range(len(questions)):
-            st.session_state.answers[i] = st.session_state.get(f"answer_{i}")
+            st.session_state.answers[i] = st.session_state.get(
+                f"answer_{i}"
+            )
+
         st.session_state.submitted = True
         st.rerun()
 
+
+# Result and Analysis Dashboard
 else:
     questions = st.session_state.questions
     answers = st.session_state.get("answers", {})
+
     correct, wrong, skipped, accuracy, percentage = get_result_counts(
         questions, answers
     )
+    total_questions = len(questions)
+    attempted = correct + wrong
 
     st.markdown("""
-         <div class="hero">
-      <small>TEST COMPLETED</small>
-      <h1>📊 Performance Report</h1>
-      <p>Apni performance dekho aur solutions ke saath revise karo.</p>
+    <div class="hero">
+      <small>TEST COMPLETED · PERFORMANCE REPORT</small>
+      <h1>Analysis Dashboard</h1>
+      <p>अपनी performance समझो, गलतियों को पहचानो और solutions से revision करो।</p>
     </div>
     """, unsafe_allow_html=True)
 
-    st.markdown(f"""
-    <div class="score-panel">
-      <div class="score-caption">YOUR FINAL SCORE</div>
-      <div class="score-number">{correct} <span style="font-size:1.3rem;color:#b6c4d8">/ {len(questions)}</span></div>
-      <div class="score-note">{percentage:.1f}% marks</div>
-    </div>
-    """, unsafe_allow_html=True)
+    # Main score card
+    st.markdown(
+        f"""
+        <div class="score-panel">
+          <div class="score-caption">YOUR FINAL SCORE</div>
+          <div class="score-number">
+            {correct}
+            <span style="font-size:1.3rem;color:#b6c4d8">
+              / {total_questions}
+            </span>
+          </div>
+          <div class="score-note">{percentage:.1f}% marks</div>
+          <div style="color:#b6c4d8;margin-top:8px">
+            Attempted: {attempted} of {total_questions}
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
+    # Three summary cards
     m1, m2, m3 = st.columns(3)
+
     with m1:
-        st.markdown(f"""
-        <div class="metric-card">
-          <div class="metric-label">🟢 Correct / सही</div>
-          <div class="metric-value correct">{correct}</div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div class="metric-card">
+              <div class="metric-label">Correct / सही</div>
+              <div class="metric-value correct">{correct}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
     with m2:
-        st.markdown(f"""
-        <div class="metric-card">
-          <div class="metric-label">🔴 Wrong / गलत</div>
-          <div class="metric-value wrong">{wrong}</div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div class="metric-card">
+              <div class="metric-label">Wrong / गलत</div>
+              <div class="metric-value wrong">{wrong}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
     with m3:
-        st.markdown(f"""
-        <div class="metric-card">
-          <div class="metric-label">⚪ Skipped / छोड़े</div>
-          <div class="metric-value skipped">{skipped}</div>
-        </div>""", unsafe_allow_html=True)
+        st.markdown(
+            f"""
+            <div class="metric-card">
+              <div class="metric-label">Skipped / छोड़े</div>
+              <div class="metric-value skipped">{skipped}</div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
     st.write("")
+
+    # Accuracy and overall percentage
     a1, a2 = st.columns(2)
-    a1.metric("🎯 Accuracy (attempted)", f"{accuracy:.1f}%")
-    a2.metric("📈 Overall percentage", f"{percentage:.1f}%")
-    st.progress(percentage / 100 if percentage else 0.0)
+
+    with a1:
+        st.metric(
+            "Accuracy · Attempted Questions",
+            f"{accuracy:.1f}%",
+            help="सही उत्तर ÷ कुल हल किए गए प्रश्न × 100",
+        )
+
+    with a2:
+        st.metric(
+            "Overall Percentage",
+            f"{percentage:.1f}%",
+            help="सही उत्तर ÷ कुल प्रश्न × 100",
+        )
+
+    st.progress(
+        max(0.0, min(1.0, percentage / 100))
+    )
 
     if percentage >= 80:
         st.success("बहुत बढ़िया! इसी तरह अभ्यास जारी रखो।")
     elif percentage >= 50:
-        st.info("अच्छा प्रयास! नीचे दिए गए solutions देखकर गलतियाँ सुधारो।")
+        st.info(
+            "अच्छा प्रयास! नीचे दिए गए solutions देखकर गलतियाँ सुधारो।"
+        )
     else:
-        st.warning("कोई बात नहीं—solutions ध्यान से पढ़ो और फिर से practice करो।")
+        st.warning(
+            "कोई बात नहीं—solutions ध्यान से पढ़ो और फिर से practice करो।"
+        )
+
+    # Analysis heading
+    st.markdown(
+        """
+        <div class="analysis-heading">
+          <h2 style="margin:0">Question-wise Analysis</h2>
+          <p style="margin:6px 0 0;color:#bdcbe0">
+            प्रत्येक प्रश्न का उत्तर और उसका समाधान अलग-अलग देखें।
+          </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Separate tabs for each result category
+    tab_correct, tab_wrong, tab_skipped = st.tabs([
+        f"सही उत्तर ({correct})",
+        f"गलत उत्तर ({wrong})",
+        f"छोड़े गए ({skipped})",
+    ])
+
+    with tab_correct:
+        st.caption(
+            "जिन प्रश्नों के उत्तर आपने सही दिए हैं।"
+        )
+        show_answer_review(
+            questions, answers, "correct"
+        )
+
+    with tab_wrong:
+        st.caption(
+            "इन प्रश्नों को ध्यान से पढ़ें और सही उत्तर का कारण समझें।"
+        )
+        show_answer_review(
+            questions, answers, "wrong"
+        )
+
+    with tab_skipped:
+        st.caption(
+            "इन प्रश्नों को दोबारा हल करके अपनी तैयारी जाँचें।"
+        )
+        show_answer_review(
+            questions, answers, "skipped"
+        )
+
+    st.markdown(
+        """
+        <div style="text-align:center;color:#9baed2;padding:18px">
+          Made with ❤️ by <b>Prateek Senmar</b>
+          · Your Personal Study Companion
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     st.divider()
-    st.subheader("📚 Answer Review & Solutions")
-    st.caption("Har question ka status, aapka answer, correct answer aur explanation dekhein.")
-    st.caption("सही, गलत और छोड़े गए—सभी प्रश्नों के उत्तर और explanations नीचे हैं।")
 
-    for i, q in enumerate(questions):
-        chosen = answers.get(i)
-        is_skipped = chosen is None
-        is_correct = chosen == q["answer"]
-        if is_skipped:
-            status = "SKIPPED · छोड़ा गया"
-            pill_class = "pill-gray"
-        elif is_correct:
-            status = "CORRECT · सही"
-            pill_class = "pill-green"
-        else:
-            status = "WRONG · गलत"
-            pill_class = "pill-red"
-
-        with st.expander(f"Question {i+1}: {status}", expanded=False):
-            st.markdown(f"**प्रश्न:** {q['question']}")
-            st.markdown(
-                f'<span class="pill {pill_class}">{status}</span>',
-                unsafe_allow_html=True,
-            )
-            st.markdown(
-                f"**आपका उत्तर:** {chosen if chosen is not None else 'उत्तर नहीं दिया / Skipped'}"
-            )
-            st.markdown(f"**सही उत्तर:** {q['answer']}")
-            st.markdown("**💡 समाधान / Explanation**")
-            st.write(q.get("explanation", "इस प्रश्न का समाधान उपलब्ध नहीं है।"))
-
-    st.markdown("<div style='text-align:center;color:#9baed2;padding:18px'>Made with ❤️ by <b>Prateek Senmar</b> · Your Personal Study Companion</div>", unsafe_allow_html=True)
-    st.divider()
     left, right = st.columns(2)
+
     with left:
-        if st.button("🔁 Naya Test Banao", type="primary", use_container_width=True):
+        if st.button(
+            "Naya Test Banao",
+            type="primary",
+            use_container_width=True,
+        ):
             reset_quiz()
             st.rerun()
+
     with right:
-        if st.button("⬆️ Result ke Top par", use_container_width=True):
+        if st.button(
+            "Result Refresh Karo",
+            use_container_width=True,
+        ):
             st.rerun()
