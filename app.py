@@ -677,7 +677,6 @@ else:
         chosen = answer.get(i)
         is_skipped = chosen is None
         is_correct = chosen == q["answer"]
-
         if is_skipped:
             status = "SKIPPED · छोड़ा गया"
             pill_class = "pill-gray"
@@ -688,68 +687,26 @@ else:
             status = "WRONG · गलत"
             pill_class = "pill-red"
 
-        with st.expander(
-            f"Question {i+1}: {status}",
-            expanded=False
-        ):
+        with st.expander(f"Question {i+1}: {status}", expanded=False):
             st.markdown(f"**प्रश्न:** {q['question']}")
-
             st.markdown(
                 f'<span class="pill {pill_class}">{status}</span>',
                 unsafe_allow_html=True,
             )
-
             st.markdown(
-                f"**आपका उत्तर:** "
-                f"{chosen if chosen is not None else 'उत्तर नहीं दिया / Skipped'}"
+                f"**आपका उत्तर:** {chosen if chosen is not None else 'उत्तर नहीं दिया / Skipped'}"
             )
-
-            st.markdown(
-                f"**सही उत्तर:** {q['answer']}"
-                        )
-
-            st.markdown(
-                f"**आपका उत्तर:** "
-                f"{chosen if chosen is not None else 'उत्तर नहीं दिया / Skipped'}"
-            )
-
-            st.markdown(
-                f"**सही उत्तर:** {q['answer']}"
-            )
-
+            st.markdown(f"**सही उत्तर:** {q['answer']}")
             st.markdown("**💡 समाधान / Explanation**")
+            st.write(q.get("explanation", "इस प्रश्न का समाधान उपलब्ध नहीं है।"))
 
-            st.write(
-                q.get(
-                    "explanation",
-                    "इस प्रश्न का समाधान उपलब्ध नहीं है।"
-                )
-            )
-
-    st.markdown(
-        "<div style='text-align:center;color:#9baed2;padding:18px'>"
-        "Made with ❤️ by <b>Prateek Senmar</b> · "
-        "Your Personal Study Companion</div>",
-        unsafe_allow_html=True,
-    )
-
+    st.markdown("<div style='text-align:center;color:#9baed2;padding:18px'>Made with ❤️ by <b>Prateek Senmar</b> · Your Personal Study Companion</div>", unsafe_allow_html=True)
     st.divider()
-
     left, right = st.columns(2)
-
     with left:
-        if st.button(
-            "🔁 Naya Test Banao",
-            type="primary",
-            use_container_width=True,
-        ):
+        if st.button("🔁 Naya Test Banao", type="primary", use_container_width=True):
             reset_quiz()
             st.rerun()
-
     with right:
-        if st.button(
-            "⬆️ Result ke Top par",
-            use_container_width=True,
-        ):
+        if st.button("⬆️ Result ke Top par", use_container_width=True):
             st.rerun()
-            
