@@ -708,7 +708,7 @@ else:
                 f"**सही उत्तर:** {q['answer']}"
             )
 
-st.markdown("**💡 समाधान / Explanation**")st.markdown("**💡 समाधान / Explanation**")
+st.markdown("**💡 समाधान / Explanation**")
 
             st.write(
                 q.get(
