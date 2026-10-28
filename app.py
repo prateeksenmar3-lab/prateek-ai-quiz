@@ -131,8 +131,7 @@ def make_quiz(pdf_text, count, language, topic):
             "Write every question, option, and explanation in clear English."
         )
 
-   prompt = f"""
-Create exactly {count} educational multiple-choice questions using the
+   prompt = f"""Create exactly {count} educational multiple-choice questions using the
 provided study material. {language_rule}
 
 Topic or focus requested by user: {topic if topic else "Cover the important concepts in the material."}
