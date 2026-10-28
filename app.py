@@ -686,3 +686,4 @@ if st.session_state.finished and st.session_state.quiz:
         st.rerun()
 
     st.caption("Made with 💜 by PRATEEK SENMAR")
+    
