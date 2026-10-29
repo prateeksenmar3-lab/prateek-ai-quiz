@@ -144,7 +144,8 @@ def get_model_name():
     try:
         return st.secrets["GEMINI_MODEL"]
     except Exception:
-        return "gemini-2.5-flash"
+        return "gemini-3.8-flash",
+               "gemini-3.5-flash",
 
 
 # =========================
