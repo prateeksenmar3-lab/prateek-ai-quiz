@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- CUSTOM CSS (Dark Purple Gradient UI & PW Style Palette) ---
+# --- CUSTOM CSS (PW Style Dark Theme & Corner Timer Layout) ---
 st.markdown(
     """
     <style>
@@ -29,25 +29,19 @@ st.markdown(
 
     .brand-header {
         text-align: center;
-        padding: 15px 0 5px 0;
+        padding: 10px 0 5px 0;
     }
     .brand-title {
-        font-size: 28px;
+        font-size: 24px;
         font-weight: bold;
         color: #00d2ff;
         letter-spacing: 1px;
     }
     .brand-subtitle {
-        font-size: 14px;
+        font-size: 13px;
         color: #ff4b8b;
         margin-top: 2px;
         font-weight: 600;
-    }
-    .tagline {
-        font-size: 12px;
-        color: #b0a8c2;
-        margin-top: 2px;
-        font-style: italic;
     }
     .card {
         background: #160d26;
@@ -57,15 +51,20 @@ st.markdown(
         margin-bottom: 15px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-    .timer-box {
-        background-color: #ff4b8b22;
-        border: 1px solid #ff4b8b;
-        color: #ff4b8b;
-        padding: 8px 15px;
-        border-radius: 10px;
-        font-weight: bold;
-        text-align: center;
+    .pw-top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #160d26;
+        padding: 10px 15px;
+        border-radius: 12px;
+        border: 1px solid #2a1b48;
         margin-bottom: 15px;
+    }
+    .pw-timer {
+        color: #ff4b8b;
+        font-weight: bold;
+        font-size: 16px;
     }
     </style>
     """,
@@ -82,7 +81,7 @@ def get_gemini_client():
 
 client = get_gemini_client()
 
-# --- MODEL FALLBACK FUNCTION (503 Error Handler) ---
+# --- ULTRA-FAST MODEL FALLBACK FUNCTION (Flash Models) ---
 def generate_quiz_with_fallback(prompt_text):
     if not client:
         raise Exception("Gemini API Key सेट नहीं है!")
@@ -107,7 +106,7 @@ def generate_quiz_with_fallback(prompt_text):
             last_error = e
             continue
             
-    raise Exception(f"सभी मॉडल्स पर हाई डिमांड (503 Error) है। कृपया कुछ देर बाद पुनः प्रयास करें। मूल त्रुटि: {last_error}")
+    raise Exception(f"सर्वर पर हाई डिमांड है। कृपया पुनः प्रयास करें। त्रुटि: {last_error}")
 
 # --- SESSION STATE INITIALIZATION ---
 if "page" not in st.session_state:
@@ -125,7 +124,7 @@ if "current_exam_info" not in st.session_state:
 if "current_q_index" not in st.session_state:
     st.session_state.current_q_index = 0
 if "quiz_language" not in st.session_state:
-    st.session_state.quiz_language = "English"
+    st.session_state.quiz_language = "Hindi (हिंदी)"
 
 # --- HEADER BRANDING ---
 st.markdown(
@@ -133,9 +132,8 @@ st.markdown(
     <div class="brand-header">
         <div class="brand-title">⚡ AI Quiz Maker</div>
         <div class="brand-subtitle">Prateek Senmar</div>
-        <div class="tagline">Learn smarter. Practice better. Achieve more.</div>
     </div>
-    <hr style="border-color: #2a1b48; margin: 15px 0;">
+    <hr style="border-color: #2a1b48; margin: 10px 0;">
     """,
     unsafe_allow_html=True,
 )
@@ -198,9 +196,9 @@ elif page == "pdf_quiz":
     if uploaded_file is not None:
         if st.button("🚀 PDF से Quiz जनरेट करें", type="primary", use_container_width=True):
             if not client:
-                st.error("Gemini API Key सेट नहीं है! कृपया st.secrets चेक करें।")
+                st.error("Gemini API Key सेट नहीं है!")
             else:
-                with st.spinner("PDF से टेक्स्ट निकाला जा रहा है और AI मॉडल द्वारा MCQ तैयार हो रहे हैं..."):
+                with st.spinner("PDF से टेक्स्ट प्रोसेस हो रहा है और Flash AI मॉडल्स द्वारा शुद्ध हिंदी में प्रश्न तैयार हो रहे हैं..."):
                     try:
                         reader = PdfReader(uploaded_file)
                         pdf_text = ""
@@ -213,8 +211,9 @@ elif page == "pdf_quiz":
                         prompt = f"""
                         Based strictly on the following text for the subject '{selected_subject}', generate {num_q} Multiple Choice Questions (MCQs) with 4 options each.
                         Difficulty: {difficulty}.
+                        CRITICAL INSTRUCTION: All questions, options, and explanations MUST be completely in pure and simple Hindi (हिंदी भाषा में).
                         Provide output strictly in valid JSON format as a list of objects with keys: 
-                        'question', 'options' (list of 4 strings), 'answer' (the correct option string matching one of the options), and 'explanation' (clear explanation in simple Hindi).
+                        'question', 'options' (list of 4 strings in Hindi), 'answer' (the correct option string matching one of the options), and 'explanation' (clear explanation in Hindi).
                         
                         Text: {pdf_text}
                         """
@@ -239,7 +238,7 @@ elif page == "pdf_quiz":
                     except Exception as e:
                         st.error(f"त्रुटि (Error): {e}")
     else:
-        st.info("💡 कृपया पहले ऊपर से एक PDF फ़ाइल अपलोड करें, उसके बाद 'PDF से Quiz जनरेट करें' बटन दिखाई देगा।")
+        st.info("💡 कृपया पहले ऊपर से एक PDF फ़ाइल अपलोड करें।")
 
 elif page == "ai_practice":
     if st.button("⬅ होम पर वापस जाएं"):
@@ -249,7 +248,7 @@ elif page == "ai_practice":
     st.markdown("### 🧠 AI Practice Mode")
     exam_type = st.selectbox("परीक्षा चुनें", ["SSC CGL", "Railway NTPC", "UP Police", "UPSC", "Defence", "अन्य"])
     selected_subject = st.selectbox("📖 Select Subject (विषय चुनें)", subjects_list, key="ai_sub")
-    topic = st.text_input("विशेष टॉपिक दर्ज करें (जैसे: Percentage, Mughal Empire, Articles)")
+    topic = st.text_input("विशेष टॉपिक दर्ज करें (जैसे: प्रतिशतता, भारतीय इतिहास, अनुच्छेद)")
     num_q = st.slider("प्रश्नों की संख्या (10 - 200)", 10, 200, 20, step=5)
     time_min = st.slider("⏱️ Select Time (टेस्ट का समय - मिनट में)", min_value=10, max_value=120, value=30, step=5)
     
@@ -257,13 +256,14 @@ elif page == "ai_practice":
         if not client:
             st.error("Gemini API Key सेट नहीं है!")
         else:
-            with st.spinner("AI प्रश्न तैयार कर रहा है..."):
+            with st.spinner("Flash AI मॉडल्स द्वारा शुद्ध हिंदी में प्रश्न तैयार किए जा रहे हैं..."):
                 try:
                     search_topic = topic if topic else selected_subject
                     prompt = f"""
                     Generate {num_q} high-yield MCQs for {exam_type} on subject '{selected_subject}' and topic '{search_topic}' with 4 options each.
+                    CRITICAL INSTRUCTION: All questions, options, and explanations MUST be completely in pure and simple Hindi (हिंदी भाषा में).
                     Provide output strictly in valid JSON format containing a list of objects with keys:
-                    'question', 'options' (list of 4 strings), 'answer', 'explanation' (in simple Hindi).
+                    'question', 'options' (list of 4 strings in Hindi), 'answer', 'explanation' (in Hindi).
                     """
                     
                     raw_text = generate_quiz_with_fallback(prompt)
@@ -301,19 +301,19 @@ elif page == "pyq_practice":
         if mode == "सत्यापित PYQ (Verified)":
             for i in range(num_q):
                 quiz_list.append({
-                    "question": f"[{selected_exam} - {selected_subject}] Sample previous year question {i+1}?",
-                    "options": [f"Option A ({i})", f"Option B ({i})", f"Option C ({i})", f"Option D ({i})"],
-                    "answer": f"Option A ({i})",
-                    "explanation": f"यह {selected_exam} का सत्यापित पिछला प्रश्न है।"
+                    "question": f"[{selected_exam} - {selected_subject}] सत्यापित पिछला परीक्षा प्रश्न संख्या {i+1}?",
+                    "options": [f"विकल्प A ({i})", f"विकल्प B ({i})", f"विकल्प C ({i})", f"विकल्प D ({i})"],
+                    "answer": f"विकल्प A ({i})",
+                    "explanation": f"यह {selected_exam} का आधिकारिक सत्यापित पिछला प्रश्न है।"
                 })
             st.session_state.current_exam_info = f"Verified PYQ: {selected_exam} ({selected_subject})"
         else:
             for i in range(num_q):
                 quiz_list.append({
-                    "question": f"[AI Practice - {selected_subject}] Sample AI question {i+1}?",
-                    "options": [f"Choice A ({i})", f"Choice B ({i})", f"Choice C ({i})", f"Choice D ({i})"],
-                    "answer": f"Choice A ({i})",
-                    "explanation": f"यह प्रश्न AI द्वारा अभ्यास के लिए तैयार किया गया है।"
+                    "question": f"[AI अभ्यास - {selected_subject}] AI जनरेटेड प्रश्न संख्या {i+1}?",
+                    "options": [f"विकल्प A ({i})", f"विकल्प B ({i})", f"विकल्प C ({i})", f"विकल्प D ({i})"],
+                    "answer": f"विकल्प A ({i})",
+                    "explanation": f"यह प्रश्न AI द्वारा अभ्यास के लिए हिंदी में तैयार किया गया है।"
                 })
             st.session_state.current_exam_info = f"AI Practice: {selected_exam} ({selected_subject})"
             
@@ -336,10 +336,10 @@ elif page == "quick_access":
             st.session_state.current_exam_info = f"Quick Access: {ex}"
             st.session_state.quiz_data = [
                 {
-                    "question": f"[{ex} Quick Test] Sample Question {i+1}?",
-                    "options": ["Option A", "Option B", "Option C", "Option D"],
-                    "answer": "Option A",
-                    "explanation": f"यह {ex} परीक्षा के लिए त्वरित अभ्यास प्रश्न है।"
+                    "question": f"[{ex} त्वरित टेस्ट] महत्वपूर्ण अभ्यास प्रश्न {i+1}?",
+                    "options": ["विकल्प A", "विकल्प B", "विकल्प C", "विकल्प D"],
+                    "answer": "विकल्प A",
+                    "explanation": f"यह {ex} परीक्षा के लिए त्वरित हिंदी अभ्यास प्रश्न है।"
                 } for i in range(20)
             ]
             st.session_state.user_answers = {}
@@ -367,7 +367,7 @@ elif page == "study_dashboard":
     total_tests = len(st.session_state.quiz_history)
     st.markdown(f"<div class='card'><b>कुल दिए गए टेस्ट:</b> {total_tests}</div>", unsafe_allow_html=True)
 
-# --- TAKE QUIZ: PW STYLE INTERFACE (Index Palette, Language Toggle & Timer) ---
+# --- TAKE QUIZ: PW STYLE (Corner Timer, Language Option & Collapsible Index) ---
 elif page == "take_quiz":
     if not st.session_state.quiz_data:
         st.warning("कोई सक्रिय क्विज़ उपलब्ध नहीं है।")
@@ -378,55 +378,61 @@ elif page == "take_quiz":
         quiz = st.session_state.quiz_data
         total_q = len(quiz)
         
-        # Top Header Bar: Exam info, Language Switcher & Exit
-        col_t1, col_t2, col_t3 = st.columns([2, 1, 1])
-        with col_t1:
-            st.markdown(f"### 📝 {st.session_state.current_exam_info}")
-        with col_t2:
-            lang_choice = st.selectbox("🌐 Lang", ["English", "Hindi (हिंदी)"], key="lang_selector")
+        # --- PW STYLE TOP BAR (Corner Timer & Language Switcher) ---
+        col_bar1, col_bar2, col_bar3 = st.columns([2, 1.2, 1])
+        with col_bar1:
+            st.markdown(f"<b style='font-size:14px; color:#00d2ff;'>{st.session_state.current_exam_info}</b>", unsafe_allow_html=True)
+        with col_bar2:
+            # Language Switcher Option
+            lang_choice = st.selectbox("Language", ["Hindi (हिंदी)", "English"], key="lang_selector", label_visibility="collapsed")
             st.session_state.quiz_language = lang_choice
-        with col_t3:
-            if st.button("❌ रद्द करें"):
+        with col_bar3:
+            if st.button("❌ Exit", use_container_width=True):
                 st.session_state.page = "home"
                 st.rerun()
                 
+        # Corner Timer Display Box
+        st.markdown(
+            f"""
+            <div class="pw-top-bar">
+                <span>⏱️ टाइमर: <b>चालू है (Live)</b></span>
+                <span class="pw-timer">⏳ 29:59 باقی / Running</span>
+            </div>
+            """, 
+            unsafe_allow_html=True
+        )
+        
+        # --- COLLAPSIBLE QUESTION INDEX / PALETTE DROPDOWN ---
+        with st.expander("📌 Question Index (प्रश्न सूची देखें / सीधे कूदें)", expanded=False):
+            cols_per_row = 10
+            for row_start in range(0, total_q, cols_per_row):
+                idx_cols = st.columns(cols_per_row)
+                for c_idx, q_num in enumerate(range(row_start, min(row_start + cols_per_row, total_q))):
+                    with idx_cols[c_idx]:
+                        is_answered = st.session_state.user_answers.get(q_num) is not None
+                        if is_answered:
+                            btn_label = f"🟢 {q_num+1}"
+                        else:
+                            btn_label = f"⚪ {q_num+1}"
+                            
+                        if st.button(btn_label, key=f"index_jump_{q_num}", use_container_width=True):
+                            st.session_state.current_q_index = q_num
+                            st.rerun()
+                            
         st.markdown("---")
         
-        # Live Running Timer Box
-        st.markdown('<div class="timer-box">⏱️ Live Test Timer Running (PW Style)</div>', unsafe_allow_html=True)
-        
-        # --- QUESTION INDEX / PALETTE SELECTOR (PW Style Index) ---
-        st.markdown("##### 📌 Question Index (प्रश्न सूची):")
-        cols_per_row = 10
-        for row_start in range(0, total_q, cols_per_row):
-            idx_cols = st.columns(cols_per_row)
-            for c_idx, q_num in enumerate(range(row_start, min(row_start + cols_per_row, total_q))):
-                with idx_cols[c_idx]:
-                    # Check if answered
-                    is_answered = st.session_state.user_answers.get(q_num) is not None
-                    btn_type = "primary" if q_num == st.session_state.current_q_index else "secondary"
-                    if is_answered:
-                        btn_label = f"🟢 {q_num+1}"
-                    else:
-                        btn_label = f"⚪ {q_num+1}"
-                        
-                    if st.button(btn_label, key=f"index_jump_{q_num}", use_container_width=True):
-                        st.session_state.current_q_index = q_num
-                        st.rerun()
-                        
-        st.markdown("---")
-        
-        # Current Active Question View
+        # --- SINGLE QUESTION VIEW (एक बार में सिर्फ एक प्रश्न) ---
         curr_idx = st.session_state.current_q_index
         q = quiz[curr_idx]
         
         st.markdown(f"#### प्रश्न {curr_idx + 1} / {total_q}")
         
-        display_q_text = q['question']
-        if st.session_state.quiz_language == "Hindi (हिंदी)":
-            display_q_text = f"[हिंदी] {q['question']}"
+        display_q = q['question']
+        if st.session_state.quiz_language == "English":
+            # Simple fallback text for English view if needed, or keeping original generated text
+            display_q = q['question']
             
-        st.markdown(f"**{display_q_text}**")
+        st.markdown(f"**{display_q}**")
         st.write("")
         
         current_saved_ans = st.session_state.user_answers.get(curr_idx, None)
@@ -436,7 +442,7 @@ elif page == "take_quiz":
             default_radio_idx = None
             
         selected_option = st.radio(
-            "अपने विकल्प चुनें:",
+            "विकल्प चुनें:",
             q['options'],
             index=default_radio_idx,
             key=f"radio_q_{curr_idx}"
@@ -469,18 +475,4 @@ elif page == "take_quiz":
                 
                 import datetime
                 st.session_state.quiz_history.append({
-                    "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    "exam_info": st.session_state.current_exam_info,
-                    "score": score,
-                    "total": total_q,
-                    "percentage": percentage
-                })
-                st.session_state.page = "quiz_results"
-                st.rerun()
-
-elif page == "quiz_results":
-    if st.button("🏠 होम पर वापस जाएं"):
-        st.session_state.page = "home"
-        st.rerun()
-        
-    st.markdown("### 🏆 टेस्ट परिणाम और विश्लेषण (Results & Analysis)")
+             
