@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- CUSTOM CSS (PW Style Dark Theme & Corner Timer Layout) ---
+# --- CUSTOM CSS (PW Style Dark Theme & UI Layout) ---
 st.markdown(
     """
     <style>
@@ -366,8 +366,8 @@ elif page == "study_dashboard":
     st.markdown("### 📈 Study Dashboard")
     total_tests = len(st.session_state.quiz_history)
     st.markdown(f"<div class='card'><b>कुल दिए गए टेस्ट:</b> {total_tests}</div>", unsafe_allow_html=True)
-# --- TAKE QUIZ: PW STYLE (Corner Timer, Language Option & Collapsible Index) ---
-if page == "take_quiz":
+
+elif page == "take_quiz":
     if not st.session_state.quiz_data:
         st.warning("कोई सक्रिय क्विज़ उपलब्ध नहीं है।")
         if st.button("होम पर जाएं"):
@@ -377,7 +377,6 @@ if page == "take_quiz":
         quiz = st.session_state.quiz_data
         total_q = len(quiz)
         
-        # --- PW STYLE TOP BAR (Corner Timer & Language Switcher) ---
         col_bar1, col_bar2, col_bar3 = st.columns([2, 1.2, 1])
         with col_bar1:
             st.markdown(f"<b style='font-size:14px; color:#00d2ff;'>{st.session_state.current_exam_info}</b>", unsafe_allow_html=True)
@@ -389,7 +388,6 @@ if page == "take_quiz":
                 st.session_state.page = "home"
                 st.rerun()
                 
-        # Corner Timer Display Box
         st.markdown(
             f"""
             <div class="pw-top-bar">
@@ -400,7 +398,6 @@ if page == "take_quiz":
             unsafe_allow_html=True
         )
         
-        # --- COLLAPSIBLE QUESTION INDEX / PALETTE DROPDOWN ---
         with st.expander("📌 Question Index (प्रश्न सूची देखें / सीधे कूदें)", expanded=False):
             cols_per_row = 10
             for row_start in range(0, total_q, cols_per_row):
@@ -419,14 +416,11 @@ if page == "take_quiz":
                             
         st.markdown("---")
         
-        # --- SINGLE QUESTION VIEW (एक बार में सिर्फ एक प्रश्न) ---
         curr_idx = st.session_state.current_q_index
         q = quiz[curr_idx]
         
         st.markdown(f"#### प्रश्न {curr_idx + 1} / {total_q}")
-        
-        display_q = q['question']
-        st.markdown(f"**{display_q}**")
+        st.markdown(f"**{q['question']}**")
         st.write("")
         
         current_saved_ans = st.session_state.user_answers.get(curr_idx, None)
@@ -445,7 +439,6 @@ if page == "take_quiz":
         st.session_state.user_answers[curr_idx] = selected_option
         st.markdown("---")
         
-        # Navigation Buttons (Previous, Next, Submit)
         col_nav1, col_nav2, col_nav3 = st.columns([1, 1, 2])
         
         with col_nav1:
@@ -477,47 +470,93 @@ if page == "take_quiz":
                 })
                 st.session_state.page = "quiz_results"
                 st.rerun()
-
+        # --- PW STYLE RESULTS & FILTERABLE QUESTIONS ANALYSIS ---
 elif page == "quiz_results":
     if st.button("🏠 होम पर वापस जाएं"):
         st.session_state.page = "home"
         st.rerun()
         
-    st.markdown("### 🏆 टेस्ट परिणाम और विस्तृत विश्लेषण (Results & Analysis)")
+    st.markdown("### 🏆 टेस्ट परिणाम और विस्तृत विश्लेषण (PW Style Results & Analysis)")
     quiz = st.session_state.quiz_data
     user_ans = st.session_state.user_answers
     
-    score = sum(1 for idx, q in enumerate(quiz) if user_ans.get(idx) == q['answer'])
     total = len(quiz)
+    score = sum(1 for idx, q in enumerate(quiz) if user_ans.get(idx) == q['answer'])
     unattempted = sum(1 for idx in range(total) if user_ans.get(idx) is None)
     incorrect = total - score - unattempted
+    attempted = total - unattempted
+    
+    # Accuracy Calculation: (Correct / Attempted) * 100
+    accuracy = round((score / attempted) * 100, 1) if attempted > 0 else 0.0
     percentage = round((score / total) * 100, 1) if total > 0 else 0
     
+    # Summary Card (PW Style)
     st.markdown(f"""
     <div class="card">
         <h4>📊 स्कोर कार्ड Summary</h4>
         <p><b>विषय/परीक्षा:</b> {st.session_state.current_exam_info}</p>
-        <p><b>सही उत्तर:</b> <span style="color:#00e676;">{score}</span></p>
-        <p><b>गलत उत्तर:</b> <span style="color:#ff5252;">{incorrect}</span></p>
-        <p><b>छोड़े गए:</b> <span style="color:#ffeb3b;">{unattempted}</span></p>
+        <hr style="border-color: #2a1b48; margin: 8px 0;">
+        <p>✅ <b>सही उत्तर (Correct):</b> <span style="color:#00e676; font-weight:bold;">{score}</span></p>
+        <p>❌ <b>गलत उत्तर (Wrong):</b> <span style="color:#ff5252; font-weight:bold;">{incorrect}</span></p>
+        <p>⏭️ <b>छोड़े गए (Skipped):</b> <span style="color:#ffeb3b; font-weight:bold;">{unattempted}</span></p>
+        <p>🎯 <b>सटीकता (Accuracy):</b> <span style="color:#00d2ff; font-weight:bold;">{accuracy}%</span></p>
+        <hr style="border-color: #2a1b48; margin: 8px 0;">
         <h3>कुल स्कोर: {score} / {total} ({percentage}%)</h3>
     </div>
     """, unsafe_allow_html=True)
     
-    st.markdown("### 📖 विस्तृत समाधान (Detailed Solutions)")
-    for idx, q in enumerate(quiz):
-        chosen = user_ans.get(idx, "उत्तर नहीं दिया")
-        correct = q['answer']
-        st.markdown(f"""
-        <div class="card">
-            <b>Q{idx+1}: {q['question']}</b><br>
-            <span>आपका उत्तर: <b>{chosen}</b></span><br>
-            <span style="color: #00d2ff;">सही उत्तर: <b>{correct}</b></span><br>
-            <p style="color: #d8b4fe; font-size: 13px; margin-top:8px;">💡 <b>समाधान:</b> {q.get('explanation', 'उपलब्ध नहीं')}</p>
-        </div>
-        """, unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown("### 🔍 Questions Analysis (प्रश्न विश्लेषण)")
     
-    if st.button("🔄 दूसरा टेस्ट दें", use_container_width=True, type="primary"):
+    # Filter Tabs for Right, Wrong, and Skipped questions
+    analysis_filter = st.radio(
+        "फ़िल्टर चुनें:",
+        ["सभी देखें (All)", "🟢 सही प्रश्न (Right)", "🔴 गलत प्रश्न (Wrong)", "🟡 छोड़े गए प्रश्न (Skipped)"],
+        horizontal=True
+    )
+    
+    st.write("")
+    
+    for idx, q in enumerate(quiz):
+        chosen = user_ans.get(idx, None)
+        correct = q['answer']
+        
+        # Categorize question status
+        if chosen is None:
+            status = "skipped"
+        elif chosen == correct:
+            status = "right"
+        else:
+            status = "wrong"
+            
+        # Apply filter logic
+        if "सही" in analysis_filter and status != "right":
+            continue
+        if "गलत" in analysis_filter and status != "wrong":
+            continue
+        if "छोड़े" in analysis_filter and status != "skipped":
+            continue
+            
+        # Status Badge & Color
+        if status == "right":
+            badge = "🟢 सही (Correct)"
+        elif status == "wrong":
+            badge = "🔴 गलत (Incorrect)"
+        else:
+            badge = "🟡 छोड़ा गया (Skipped)"
+            
+        chosen_text = chosen if chosen is not None else "उत्तर नहीं दिया"
+        
+        # PW Style Expandable Card for each question with solution
+        with st.expander(f"Q{idx+1}: {q['question']} [{badge}]"):
+            st.markdown(f"👉 आपका उत्तर: **{chosen_text}**")
+            st.markdown(f"🎯 सही उत्तर: <span style='color: #00d2ff; font-weight: bold;'>{correct}</span>", unsafe_allow_html=True)
+            st.markdown("---")
+            st.markdown(f"💡 **विस्तृत समाधान (Solution):**\n\n{q.get('explanation', 'समाधान उपलब्ध नहीं है।')}")
+            
+    st.markdown("---")
+    if st.button("🔄 दूसरा टेस्ट दें (New Test)", use_container_width=True, type="primary"):
         st.session_state.page = "home"
+        st.reron = st.rerun()  # Fixed syntax
         st.rerun()
         
