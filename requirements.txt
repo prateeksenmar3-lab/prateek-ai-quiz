@@ -2,3 +2,4 @@ streamlit
 pypdf
 google-genai
 streamlit-autorefresh
+supabase
