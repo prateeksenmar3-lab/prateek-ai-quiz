@@ -303,4 +303,5 @@ elif st.session_state.page == "quiz_screen":
       st.session_state.quiz_data = None
       st.session_state.quiz_submitted = False
       st.rerun()
+
       
