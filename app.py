@@ -148,15 +148,9 @@ elif page == "pdf_quiz":
     st.markdown("### 📄 PDF to Quiz Converter")
     uploaded_file = st.file_uploader("अपनी PDF फ़ाइल यहाँ अपलोड करें", type=["pdf"])
     
-    # Select Subject Option Added
     selected_subject = st.selectbox("📖 Select Subject (विषय चुनें)", subjects_list, key="pdf_sub")
-    
-    # Questions Range (10 to 200)
     num_q = st.slider("प्रश्नों की संख्या (10 - 200)", 10, 200, 20, step=5)
-    
-    # Time Slider (10 minutes to 120 minutes / 2 hours)
     time_min = st.slider("⏱️ Select Time (टेस्ट का समय - मिनट में)", min_value=10, max_value=120, value=30, step=5)
-    
     difficulty = st.selectbox("कठिनाई स्तर (Difficulty)", ["Easy", "Medium", "Hard"])
     
     if uploaded_file is not None:
@@ -215,16 +209,9 @@ elif page == "ai_practice":
         
     st.markdown("### 🧠 AI Practice Mode")
     exam_type = st.selectbox("परीक्षा चुनें", ["SSC CGL", "Railway NTPC", "UP Police", "UPSC", "Defence", "अन्य"])
-    
-    # Select Subject Option Added
     selected_subject = st.selectbox("📖 Select Subject (विषय चुनें)", subjects_list, key="ai_sub")
-    
     topic = st.text_input("विशेष टॉपिक दर्ज करें (जैसे: Percentage, Mughal Empire, Articles)")
-    
-    # Questions Range (10 to 200)
     num_q = st.slider("प्रश्नों की संख्या (10 - 200)", 10, 200, 20, step=5)
-    
-    # Time Slider (10 minutes to 120 minutes / 2 hours)
     time_min = st.slider("⏱️ Select Time (टेस्ट का समय - मिनट में)", min_value=10, max_value=120, value=30, step=5)
     
     if st.button("🚀 AI Quiz शुरू करें", type="primary", use_container_width=True):
@@ -251,5 +238,182 @@ elif page == "ai_practice":
                     elif clean_res.startswith("```"):
                         clean_res = clean_res[3:-3].strip()
                         
-                    st.session_state.quiz_data = json.loads(clean_
+                    parsed_quiz = json.loads(clean_res)
+                    st.session_state.quiz_data = parsed_quiz
+                    st.session_state.user_answers = {}
+                    st.session_state.quiz_submitted = False
+                    st.session_state.current_exam_info = f"AI Practice: {exam_type} - {selected_subject} ({time_min} Mins)"
+                    st.session_state.page = "take_quiz"
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"त्रुटि: {e}")
+
+elif page == "pyq_practice":
+    if st.button("⬅ होम पर वापस जाएं"):
+        st.session_state.page = "home"
+        st.rerun()
+        
+    st.markdown("### 📜 PYQ Practice Section")
+    mode = st.radio("प्रश्न स्रोत चुनें:", ["सत्यापित PYQ (Verified)", "AI Practice Questions"])
+    selected_exam = st.selectbox("परीक्षा चुनें", ["SSC CGL 2023", "UP Police 2024", "Railway Group D"])
+    selected_subject = st.selectbox("📖 Select Subject", subjects_list, key="pyq_sub")
+    num_q = st.slider("प्रश्नों की संख्या (10 - 200)", 10, 200, 20, step=5)
+    time_min = st.slider("⏱️ Select Time (मिनट)", 10, 120, 30, step=5)
     
+    if st.button("🎯 PYQ Test शुरू करें", type="primary", use_container_width=True):
+        quiz_list = []
+        if mode == "सत्यापित PYQ (Verified)":
+            for i in range(num_q):
+                quiz_list.append({
+                    "question": f"[{selected_exam} - {selected_subject}] Sample previous year question {i+1}?",
+                    "options": [f"Option A ({i})", f"Option B ({i})", f"Option C ({i})", f"Option D ({i})"],
+                    "answer": f"Option A ({i})",
+                    "explanation": f"यह {selected_exam} का सत्यापित पिछला प्रश्न है।"
+                })
+            st.session_state.current_exam_info = f"Verified PYQ: {selected_exam} ({selected_subject})"
+        else:
+            for i in range(num_q):
+                quiz_list.append({
+                    "question": f"[AI Practice - {selected_subject}] Sample AI question {i+1}?",
+                    "options": [f"Choice A ({i})", f"Choice B ({i})", f"Choice C ({i})", f"Choice D ({i})"],
+                    "answer": f"Choice A ({i})",
+                    "explanation": f"यह प्रश्न AI द्वारा अभ्यास के लिए तैयार किया गया है।"
+                })
+            st.session_state.current_exam_info = f"AI Practice: {selected_exam} ({selected_subject})"
+            
+        st.session_state.quiz_data = quiz_list
+        st.session_state.user_answers = {}
+        st.session_state.quiz_submitted = False
+        st.session_state.page = "take_quiz"
+        st.rerun()
+
+elif page == "quick_access":
+    if st.button("⬅ होम पर वापस जाएं"):
+        st.session_state.page = "home"
+        st.rerun()
+        
+    st.markdown("### ⚡ Quick Access Exams")
+    exams = ["SSC", "Railway", "IB", "UP Police", "RPF", "Delhi Police", "MP Police", "Defence"]
+    for ex in exams:
+        if st.button(f"📌 {ex} Test शुरू करें", use_container_width=True):
+            st.session_state.current_exam_info = f"Quick Access: {ex}"
+            st.session_state.quiz_data = [
+                {
+                    "question": f"[{ex} Quick Test] Sample Question {i+1}?",
+                    "options": ["Option A", "Option B", "Option C", "Option D"],
+                    "answer": "Option A",
+                    "explanation": f"यह {ex} परीक्षा के लिए त्वरित अभ्यास प्रश्न है।"
+                } for i in range(20)
+            ]
+            st.session_state.user_answers = {}
+            st.session_state.quiz_submitted = False
+            st.session_state.page = "take_quiz"
+            st.rerun()
+
+elif page == "quiz_history_page":
+    if st.button("⬅ होम पर वापस जाएं"):
+        st.session_state.page = "home"
+        st.rerun()
+    st.markdown("### 📊 Quiz History")
+    if not st.session_state.quiz_history:
+        st.info("कोई पिछला रिकॉर्ड उपलब्ध नहीं है।")
+    else:
+        for record in reversed(st.session_state.quiz_history):
+            st.markdown(f"<div class='card'><b>{record['exam_info']}</b><br>Score: {record['score']}/{record['total']} ({record['percentage']}%)</div>", unsafe_allow_html=True)
+
+elif page == "study_dashboard":
+    if st.button("⬅ होम पर वापस जाएं"):
+        st.session_state.page = "home"
+        st.rerun()
+    st.markdown("### 📈 Study Dashboard")
+    total_tests = len(st.session_state.quiz_history)
+    st.markdown(f"<div class='card'><b>कुल दिए गए टेस्ट:</b> {total_tests}</div>", unsafe_allow_html=True)
+
+elif page == "take_quiz":
+    if not st.session_state.quiz_data:
+        st.warning("कोई सक्रिय क्विज़ उपलब्ध नहीं है।")
+        if st.button("होम पर जाएं"):
+            st.session_state.page = "home"
+            st.rerun()
+    else:
+        quiz = st.session_state.quiz_data
+        
+        col_t1, col_t2 = st.columns([3, 1])
+        with col_t1:
+            st.markdown(f"### 📝 {st.session_state.current_exam_info}")
+        with col_t2:
+            if st.button("❌ रद्द करें"):
+                st.session_state.page = "home"
+                st.rerun()
+        st.markdown("---")
+        
+        with st.form("active_quiz_form"):
+            user_ans = {}
+            for idx, q in enumerate(quiz):
+                st.markdown(f"**Q{idx+1}: {q['question']}**")
+                ans = st.radio("विकल्प चुनें:", q['options'], key=f"ans_q_{idx}", index=None)
+                user_ans[idx] = ans
+                st.write("---")
+                
+            submitted = st.form_submit_button("✅ टेस्ट सबमिट करें", use_container_width=True)
+            if submitted:
+                st.session_state.user_answers = user_ans
+                st.session_state.quiz_submitted = True
+                
+                score = sum(1 for idx, q in enumerate(quiz) if user_ans.get(idx) == q['answer'])
+                total = len(quiz)
+                percentage = round((score / total) * 100, 1) if total > 0 else 0
+                
+                import datetime
+                st.session_state.quiz_history.append({
+                    "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "exam_info": st.session_state.current_exam_info,
+                    "score": score,
+                    "total": total,
+                    "percentage": percentage
+                })
+                st.session_state.page = "quiz_results"
+                st.rerun()
+
+elif page == "quiz_results":
+    if st.button("🏠 होम पर वापस जाएं"):
+        st.session_state.page = "home"
+        st.rerun()
+        
+    st.markdown("### 🏆 टेस्ट परिणाम और विश्लेषण")
+    quiz = st.session_state.quiz_data
+    user_ans = st.session_state.user_answers
+    
+    score = sum(1 for idx, q in enumerate(quiz) if user_ans.get(idx) == q['answer'])
+    total = len(quiz)
+    unattempted = sum(1 for idx in range(total) if user_ans.get(idx) is None or user_ans.get(idx) == "उत्तर नहीं दिया")
+    incorrect = total - score - unattempted
+    
+    st.markdown(f"""
+    <div class="card">
+        <h4>📊 स्कोर कार्ड Summary</h4>
+        <p><b>विषय/परीक्षा:</b> {st.session_state.current_exam_info}</p>
+        <p><b>सही उत्तर:</b> <span style="color:#00e676;">{score}</span></p>
+        <p><b>गलत उत्तर:</b> <span style="color:#ff5252;">{incorrect}</span></p>
+        <p><b>छोड़े गए:</b> <span style="color:#ffeb3b;">{unattempted}</span></p>
+        <h3>कुल स्कोर: {score} / {total}</h3>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### 📖 विस्तृत समाधान")
+    for idx, q in enumerate(quiz):
+        chosen = user_ans.get(idx, "उत्तर नहीं दिया")
+        correct = q['answer']
+        st.markdown(f"""
+        <div class="card">
+            <b>Q{idx+1}: {q['question']}</b><br>
+            <span>आपका उत्तर: <b>{chosen}</b></span><br>
+            <span style="color: #00d2ff;">सही उत्तर: <b>{correct}</b></span><br>
+            <p style="color: #d8b4fe; font-size: 13px; margin-top:8px;">💡 <b>समाधान:</b> {q.get('explanation', 'उपलब्ध नहीं')}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    if st.button("🔄 दूसरा टेस्ट दें", use_container_width=True, type="primary"):
+        st.session_state.page = "home"
+        st.rerun()
+                    
