@@ -71,6 +71,34 @@ def get_gemini_client():
 
 client = get_gemini_client()
 
+# --- ROBUST CONTENT GENERATION WITH MODEL FALLBACK (503 Error Handler) ---
+def generate_quiz_with_fallback(prompt_text):
+    if not client:
+        raise Exception("Gemini API Key सेट नहीं है!")
+    
+    # Priority order of models including 3.8, 3.7, and 3.5 flash lite
+    models_to_try = [
+        "gemini-3.8-flash",
+        "gemini-3.7-flash",
+        "gemini-3.5-flash-lite",
+        "gemini-2.5-flash"
+    ]
+    
+    last_error = None
+    for model_name in models_to_try:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt_text
+            )
+            if response and response.text:
+                return response.text
+        except Exception as e:
+            last_error = e
+            continue
+            
+    raise Exception(f"सभी मॉडल्स पर हाई डिमांड (503 Error) है। कृपया कुछ देर बाद पुनः प्रयास करें। मूल त्रुटि: {last_error}")
+
 # --- SESSION STATE INITIALIZATION ---
 if "page" not in st.session_state:
     st.session_state.page = "home"
@@ -158,7 +186,7 @@ elif page == "pdf_quiz":
             if not client:
                 st.error("Gemini API Key सेट नहीं है! कृपया st.secrets चेक करें।")
             else:
-                with st.spinner("PDF से टेक्स्ट निकाला जा रहा है और AI द्वारा उच्च-गुणवत्ता वाले MCQ तैयार हो रहे हैं..."):
+                with st.spinner("PDF से टेक्स्ट निकाला जा रहा है और AI मॉडल (3.8 / 3.7 / 3.5 Lite) द्वारा MCQ तैयार हो रहे हैं..."):
                     try:
                         reader = PdfReader(uploaded_file)
                         pdf_text = ""
@@ -177,12 +205,9 @@ elif page == "pdf_quiz":
                         Text: {pdf_text}
                         """
                         
-                        response = client.models.generate_content(
-                            model='gemini-3.8-flash',
-                            contents=prompt
-                        )
+                        raw_text = generate_quiz_with_fallback(prompt)
                         
-                        clean_res = response.text.strip()
+                        clean_res = raw_text.strip()
                         if clean_res.startswith("```json"):
                             clean_res = clean_res[7:-3].strip()
                         elif clean_res.startswith("```"):
@@ -227,12 +252,9 @@ elif page == "ai_practice":
                     'question', 'options' (list of 4 strings), 'answer', 'explanation' (in simple Hindi).
                     """
                     
-                    response = client.models.generate_content(
-                        model='gemini-3.8-flash',
-                        contents=prompt
-                    )
+                    raw_text = generate_quiz_with_fallback(prompt)
                     
-                    clean_res = response.text.strip()
+                    clean_res = raw_text.strip()
                     if clean_res.startswith("```json"):
                         clean_res = clean_res[7:-3].strip()
                     elif clean_res.startswith("```"):
@@ -416,4 +438,4 @@ elif page == "quiz_results":
     if st.button("🔄 दूसरा टेस्ट दें", use_container_width=True, type="primary"):
         st.session_state.page = "home"
         st.rerun()
-                    
+            
