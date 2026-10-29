@@ -120,7 +120,7 @@ def get_clients():
 
 
 supabase, gemini, config_error = get_clients()
-MODEL = get_secret("GEMINI_MODEL", "gemini-2.5-flash")
+MODEL = get_secret("GEMINI_MODEL", "gemini-3.8-flash")
 
 
 def init_state():
