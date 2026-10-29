@@ -383,7 +383,6 @@ elif page == "take_quiz":
         with col_bar1:
             st.markdown(f"<b style='font-size:14px; color:#00d2ff;'>{st.session_state.current_exam_info}</b>", unsafe_allow_html=True)
         with col_bar2:
-            # Language Switcher Option
             lang_choice = st.selectbox("Language", ["Hindi (हिंदी)", "English"], key="lang_selector", label_visibility="collapsed")
             st.session_state.quiz_language = lang_choice
         with col_bar3:
@@ -396,7 +395,7 @@ elif page == "take_quiz":
             f"""
             <div class="pw-top-bar">
                 <span>⏱️ टाइमर: <b>चालू है (Live)</b></span>
-                <span class="pw-timer">⏳ 29:59 باقی / Running</span>
+                <span class="pw-timer">⏳ Running</span>
             </div>
             """, 
             unsafe_allow_html=True
@@ -428,10 +427,6 @@ elif page == "take_quiz":
         st.markdown(f"#### प्रश्न {curr_idx + 1} / {total_q}")
         
         display_q = q['question']
-        if st.session_state.quiz_language == "English":
-            # Simple fallback text for English view if needed, or keeping original generated text
-            display_q = q['question']
-            
         st.markdown(f"**{display_q}**")
         st.write("")
         
@@ -475,4 +470,9 @@ elif page == "take_quiz":
                 
                 import datetime
                 st.session_state.quiz_history.append({
-             
+                    "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "exam_info": st.session_state.current_exam_info,
+                    "score": score,
+                    "total": total_q,
+                    "percentage": percentage
+  
