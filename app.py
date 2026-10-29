@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- CUSTOM CSS (PW Style Dark Theme & UI Styling) ---
+# --- CUSTOM CSS (PW Style Dark Theme & Corner Timer Layout) ---
 st.markdown(
     """
     <style>
@@ -64,7 +64,7 @@ st.markdown(
     .pw-timer {
         color: #ff4b8b;
         font-weight: bold;
-        font-size: 15px;
+        font-size: 16px;
     }
     </style>
     """,
@@ -81,10 +81,10 @@ def get_gemini_client():
 
 client = get_gemini_client()
 
-# --- ULTRA-FAST MODEL FALLBACK FUNCTION (Flash Models & 503 Handling) ---
+# --- ULTRA-FAST MODEL FALLBACK FUNCTION (Flash Models) ---
 def generate_quiz_with_fallback(prompt_text):
     if not client:
-        raise Exception("Gemini API Key सेट नहीं है! कृपया st.secrets चेक करें।")
+        raise Exception("Gemini API Key सेट नहीं है!")
     
     models_to_try = [
         "gemini-3.8-flash",
@@ -106,7 +106,7 @@ def generate_quiz_with_fallback(prompt_text):
             last_error = e
             continue
             
-    raise Exception(f"सर्वर पर हाई डिमांड (503) है। कृपया कुछ देर बाद पुनः प्रयास करें। मूल त्रुटि: {last_error}")
+    raise Exception(f"सर्वर पर हाई डिमांड है। कृपया पुनः प्रयास करें। त्रुटि: {last_error}")
 
 # --- SESSION STATE INITIALIZATION ---
 if "page" not in st.session_state:
@@ -366,9 +366,8 @@ elif page == "study_dashboard":
     st.markdown("### 📈 Study Dashboard")
     total_tests = len(st.session_state.quiz_history)
     st.markdown(f"<div class='card'><b>कुल दिए गए टेस्ट:</b> {total_tests}</div>", unsafe_allow_html=True)
-
 # --- TAKE QUIZ: PW STYLE (Corner Timer, Language Option & Collapsible Index) ---
-elif page == "take_quiz":
+if page == "take_quiz":
     if not st.session_state.quiz_data:
         st.warning("कोई सक्रिय क्विज़ उपलब्ध नहीं है।")
         if st.button("होम पर जाएं"):
@@ -473,4 +472,52 @@ elif page == "take_quiz":
                     "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                     "exam_info": st.session_state.current_exam_info,
                     "score": score,
-                    "total": t
+                    "total": total_q,
+                    "percentage": percentage
+                })
+                st.session_state.page = "quiz_results"
+                st.rerun()
+
+elif page == "quiz_results":
+    if st.button("🏠 होम पर वापस जाएं"):
+        st.session_state.page = "home"
+        st.rerun()
+        
+    st.markdown("### 🏆 टेस्ट परिणाम और विस्तृत विश्लेषण (Results & Analysis)")
+    quiz = st.session_state.quiz_data
+    user_ans = st.session_state.user_answers
+    
+    score = sum(1 for idx, q in enumerate(quiz) if user_ans.get(idx) == q['answer'])
+    total = len(quiz)
+    unattempted = sum(1 for idx in range(total) if user_ans.get(idx) is None)
+    incorrect = total - score - unattempted
+    percentage = round((score / total) * 100, 1) if total > 0 else 0
+    
+    st.markdown(f"""
+    <div class="card">
+        <h4>📊 स्कोर कार्ड Summary</h4>
+        <p><b>विषय/परीक्षा:</b> {st.session_state.current_exam_info}</p>
+        <p><b>सही उत्तर:</b> <span style="color:#00e676;">{score}</span></p>
+        <p><b>गलत उत्तर:</b> <span style="color:#ff5252;">{incorrect}</span></p>
+        <p><b>छोड़े गए:</b> <span style="color:#ffeb3b;">{unattempted}</span></p>
+        <h3>कुल स्कोर: {score} / {total} ({percentage}%)</h3>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("### 📖 विस्तृत समाधान (Detailed Solutions)")
+    for idx, q in enumerate(quiz):
+        chosen = user_ans.get(idx, "उत्तर नहीं दिया")
+        correct = q['answer']
+        st.markdown(f"""
+        <div class="card">
+            <b>Q{idx+1}: {q['question']}</b><br>
+            <span>आपका उत्तर: <b>{chosen}</b></span><br>
+            <span style="color: #00d2ff;">सही उत्तर: <b>{correct}</b></span><br>
+            <p style="color: #d8b4fe; font-size: 13px; margin-top:8px;">💡 <b>समाधान:</b> {q.get('explanation', 'उपलब्ध नहीं')}</p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    if st.button("🔄 दूसरा टेस्ट दें", use_container_width=True, type="primary"):
+        st.session_state.page = "home"
+        st.rerun()
+        
