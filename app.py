@@ -295,14 +295,36 @@ MATERIAL:
 {source_text[:60000]}
 """
 
-    response = gemini.models.generate_content(
-        model=MODEL,
-        contents=prompt,
-        config={
-            "temperature": 0.25,
-            "response_mime_type": "application/json",
-        },
-    )
+    
+        model_candidates = [
+            "gemini-3.8-flash",
+            "gemini-3.7-flash",
+            "gemini-3.5-flash-lite",
+        ]
+
+        response = None
+        last_error = None
+
+        for candidate in model_candidates:
+            try:
+                response = gemini.models.generate_content(
+                    model=candidate,
+                    contents=prompt,
+                    config={
+                        "temperature": 0.25,
+                        "response_mime_type": "application/json",
+                    },
+                )
+                break
+            except Exception as exc:
+                last_error = exc
+                continue
+
+        if response is None:
+            raise RuntimeError(
+                f"Gemini ke sabhi models fail hue: {last_error}"
+            )
+            
 
     data = parse_json_response(response.text)
     questions = data.get("questions", [])
