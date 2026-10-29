@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- CUSTOM CSS (PW Style Dark Theme & Corner Timer Layout) ---
+# --- CUSTOM CSS (PW Style Dark Theme & UI Styling) ---
 st.markdown(
     """
     <style>
@@ -64,7 +64,7 @@ st.markdown(
     .pw-timer {
         color: #ff4b8b;
         font-weight: bold;
-        font-size: 16px;
+        font-size: 15px;
     }
     </style>
     """,
@@ -81,10 +81,10 @@ def get_gemini_client():
 
 client = get_gemini_client()
 
-# --- ULTRA-FAST MODEL FALLBACK FUNCTION (Flash Models) ---
+# --- ULTRA-FAST MODEL FALLBACK FUNCTION (Flash Models & 503 Handling) ---
 def generate_quiz_with_fallback(prompt_text):
     if not client:
-        raise Exception("Gemini API Key सेट नहीं है!")
+        raise Exception("Gemini API Key सेट नहीं है! कृपया st.secrets चेक करें।")
     
     models_to_try = [
         "gemini-3.8-flash",
@@ -106,7 +106,7 @@ def generate_quiz_with_fallback(prompt_text):
             last_error = e
             continue
             
-    raise Exception(f"सर्वर पर हाई डिमांड है। कृपया पुनः प्रयास करें। त्रुटि: {last_error}")
+    raise Exception(f"सर्वर पर हाई डिमांड (503) है। कृपया कुछ देर बाद पुनः प्रयास करें। मूल त्रुटि: {last_error}")
 
 # --- SESSION STATE INITIALIZATION ---
 if "page" not in st.session_state:
@@ -473,6 +473,4 @@ elif page == "take_quiz":
                     "time": datetime.datetime.now().strftime("%Y-%m-%d %H:%M"),
                     "exam_info": st.session_state.current_exam_info,
                     "score": score,
-                    "total": total_q,
-                    "percentage": percentage
-  
+                    "total": t
