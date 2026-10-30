@@ -63,11 +63,12 @@ st.markdown(
     .solution-box {
         background: #101826;
         border-left: 4px solid #00e676;
-        padding: 12px;
+        padding: 14px;
         border-radius: 8px;
-        margin-top: 8px;
-        font-size: 14px;
+        margin-top: 10px;
+        font-size: 15px;
         color: #e0e0e0;
+        line-height: 1.6;
     }
     </style>
     """,
@@ -145,70 +146,74 @@ if "quiz_duration_mins" not in st.session_state:
     st.session_state.quiz_duration_mins = 20
 if "ai_diff_level" not in st.session_state:
     st.session_state.ai_diff_level = "Medium"
+if "active_quiz_lang" not in st.session_state:
+    st.session_state.active_quiz_lang = "Hindi"
+if "last_prompt_text" not in st.session_state:
+    st.session_state.last_prompt_text = ""
 
 # --- EXAM WISE SUBJECTS MAPPING ---
 exam_subjects_map = {
     "SSC CGL": [
-        "Quantitative Aptitude (गणित)",
-        "General Intelligence & Reasoning (तर्कशक्ति)",
-        "English Comprehension (अंग्रेजी)",
-        "General Awareness / GS (सामान्य जागरूकता)",
+        "Quantitative Aptitude (Ganit)",
+        "General Intelligence & Reasoning (Tarkshakti)",
+        "English Comprehension",
+        "General Awareness / GS",
         "Complete SSC CGL Tier-1 Mock"
     ],
     "SSC GD": [
-        "General Intelligence & Reasoning (तर्कशक्ति)",
-        "General Knowledge & General Awareness (सामान्य ज्ञान)",
-        "Elementary Mathematics (प्रारंभिक गणित)",
-        "Hindi / English (हिंदी / अंग्रेजी)",
+        "General Intelligence & Reasoning (Tarkshakti)",
+        "General Knowledge & General Awareness",
+        "Elementary Mathematics (Ganit)",
+        "Hindi / English",
         "Complete SSC GD Mock Test"
     ],
     "SSC CHSL": [
-        "Quantitative Aptitude (गणित)",
-        "Reasoning (तर्कशक्ति)",
-        "English Language (अंग्रेजी)",
-        "General Awareness (सामान्य ज्ञान)"
+        "Quantitative Aptitude (Ganit)",
+        "Reasoning (Tarkshakti)",
+        "English Language",
+        "General Awareness"
     ],
     "SSC MTS": [
-        "Numerical and Mathematical Ability (गणित)",
-        "Reasoning Ability and Problem Solving (तर्कशक्ति)",
-        "General Awareness (सामान्य जागरूकता)",
-        "English Language and Comprehension (अंग्रेजी)"
+        "Numerical and Mathematical Ability",
+        "Reasoning Ability and Problem Solving",
+        "General Awareness",
+        "English Language and Comprehension"
     ],
     "SSC CPO": [
-        "Quantitative Aptitude (गणित)",
-        "General Reasoning (तर्कशक्ति)",
-        "English Language (अंग्रेजी)",
-        "General Knowledge & General Awareness (सामान्य ज्ञान)"
+        "Quantitative Aptitude",
+        "General Reasoning",
+        "English Language",
+        "General Knowledge & General Awareness"
     ],
     "Railway RRB NTPC": [
-        "Mathematics (गणित)",
-        "General Intelligence & Reasoning (सामान्य बुद्धि एवं तर्क)",
-        "General Awareness & Current Affairs (सामान्य जागरूकता एवं समसामयिक)",
+        "Mathematics (Ganit)",
+        "General Intelligence & Reasoning",
+        "General Awareness & Current Affairs",
         "Complete RRB NTPC CBT-1 Mock"
     ],
     "Railway RRB Group D": [
-        "Mathematics (गणित)",
-        "General Intelligence & Reasoning (तर्कशक्ति)",
-        "General Science - Physics, Chemistry, Biology (सामान्य विज्ञान)",
-        "General Awareness & Current Affairs (सामान्य जागरूकता)"
+        "Mathematics",
+        "General Intelligence & Reasoning",
+        "General Science - Physics, Chemistry, Biology",
+        "General Awareness & Current Affairs"
     ],
     "UPSC Civil Services": [
-        "General Studies Paper I (इतिहास, भूगोल, राजव्यवस्था, अर्थव्यवस्था)",
+        "General Studies Paper I (History, Geography, Polity, Economy)",
         "CSAT - Quantitative & Reasoning",
-        "Environment, Science & Tech (पर्यावरण एवं विज्ञान)",
+        "Environment, Science & Tech",
         "Complete UPSC Prelims GS Mock"
     ],
     "UP Police Constable / SI": [
-        "General Hindi (सामान्य हिंदी)",
-        "Numerical & Mental Ability (संख्यात्मक एवं मानसिक योग्यता)",
-        "Mental Aptitude / IQ / Reasoning (तार्किक क्षमता)",
-        "General Knowledge / UP GK (सामान्य ज्ञान एवं यूपी जीके)"
+        "General Hindi",
+        "Numerical & Mental Ability",
+        "Mental Aptitude / IQ / Reasoning",
+        "General Knowledge / UP GK"
     ],
     "Defence (CDS / NDA / Agniveer)": [
-        "Mathematics (गणित)",
-        "General English (सामान्य अंग्रेजी)",
-        "General Science & Physics (सामान्य विज्ञान एवं भौतिकी)",
-        "General Knowledge & Polity (सामान्य ज्ञान)"
+        "Mathematics",
+        "General English",
+        "General Science & Physics",
+        "General Knowledge & Polity"
     ]
 }
 
@@ -233,7 +238,7 @@ if page == "home":
     st.markdown(
         """
         <div class="tagline-box">
-            <h3 style="color: #ffffff; margin-bottom: 5px; font-size: 20px;">अपनी तैयारी को अगला स्तर दो!</h3>
+            <h3 style="color: #ffffff; margin-bottom: 5px; font-size: 20px;">Apni taiyari ko agla star do!</h3>
             <p style="color: #b0a8c2; font-size: 13px; margin: 0;">Practice smarter. Improve faster. Achieve more.</p>
         </div>
         """,
@@ -242,23 +247,23 @@ if page == "home":
     
     st.markdown("<h4 style='color: #ffffff; margin-bottom: 15px;'>⚡ Choose Your Practice</h4>", unsafe_allow_html=True)
     
-    if st.button("📄  **PDF to Quiz**\n\n अपनी PDF से MCQ टेस्ट बनाओ", use_container_width=True):
+    if st.button("📄  **PDF to Quiz**\n\n Apni PDF se MCQ test banao", use_container_width=True):
         st.session_state.page = "pdf_quiz"
         st.rerun()
         
-    if st.button("🤖  **AI Practice**\n\n AI से नए प्रश्न और मॉक टेस्ट", use_container_width=True):
+    if st.button("🤖  **AI Practice**\n\n AI se naye prashn aur mock test", use_container_width=True):
         st.session_state.page = "ai_practice"
         st.rerun()
         
-    if st.button("🎓  **PYQ Practice**\n\n पिछले वर्षों के प्रश्नों का अभ्यास", use_container_width=True):
+    if st.button("🎓  **PYQ Practice**\n\n Pichle varsho ke prashno ka abhyas", use_container_width=True):
         st.session_state.page = "pyq_practice"
         st.rerun()
         
-    if st.button("🗂️  **Quick Access**\n\n अपने एग्जाम को चुनें", use_container_width=True):
+    if st.button("🗂️  **Quick Access**\n\n Apne exam ko chunein", use_container_width=True):
         st.session_state.page = "quick_access"
         st.rerun()
 
-    if st.button("📊  **Quiz History & Dashboard**\n\n अपने पुराने स्कोर देखें", use_container_width=True):
+    if st.button("📊  **Quiz History & Dashboard**\n\n Apne purane score dekhein", use_container_width=True):
         st.session_state.page = "study_dashboard"
         st.rerun()
         
@@ -279,24 +284,24 @@ elif page == "pdf_quiz":
         st.rerun()
         
     st.markdown("### 📄 PDF to Quiz")
-    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>अपनी PDF से MCQ टेस्ट बनाओ</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>Apni PDF se MCQ test banao</p>", unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("अपनी पढ़ाई की PDF चुनें [ PDF चुनें ]", type=["pdf"])
+    uploaded_file = st.file_uploader("Apni padhai ki PDF chunein", type=["pdf"])
     all_subjects_flat = [sub for sub_list in exam_subjects_map.values() for sub in sub_list]
-    selected_subject = st.selectbox("📖 Select Subject (विषय चुनें)", all_subjects_flat, key="pdf_sub")
+    selected_subject = st.selectbox("📖 Select Subject", all_subjects_flat, key="pdf_sub")
     
-    st.markdown("#### प्रश्नों की संख्या (Up to 200)")
-    num_q_choice = st.radio("प्रश्नों की संख्या चुनें:", ["10", "25", "50", "100", "200"], horizontal=True, key="num_q_radio")
+    st.markdown("#### Prashno ki sankhya (Up to 200)")
+    num_q_choice = st.radio("Prashno ki sankhya chunein:", ["10", "25", "50", "100", "200"], horizontal=True, key="num_q_radio")
     num_q = int(num_q_choice)
         
-    st.markdown("#### टाइमर / समय")
-    time_min = st.slider("टेस्ट का समय (मिनट में):", min_value=5, max_value=180, value=30, step=5)
+    st.markdown("#### Timer / Samay")
+    time_min = st.slider("Test ka samay (minute mein):", min_value=5, max_value=180, value=30, step=5)
     
-    st.markdown("#### भाषा (Language)")
-    lang_opt = st.selectbox("भाषा चुनें:", ["Hindi (हिंदी)", "English"])
+    st.markdown("#### Bhasha (Language)")
+    lang_opt = st.selectbox("Bhasha chunein:", ["Hindi", "English"])
     
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🚀 क्विज़ बनाएँ", type="primary", use_container_width=True):
+    if st.button("🚀 Quiz Banayein", type="primary", use_container_width=True):
         if not client:
             st.error("API Key missing!")
         else:
@@ -312,16 +317,18 @@ elif page == "pdf_quiz":
                     else:
                         pdf_text = f"General questions for {selected_subject}"
                         
-                    lang_instruction = "in pure and simple Hindi language" if "Hindi" in lang_opt else "in English language"
+                    lang_inst = "in pure and simple Hindi language" if lang_opt == "Hindi" else "in English language"
                     prompt = f"""
                     Based strictly on the text for '{selected_subject}', generate {num_q} MCQs with 4 options each.
                     Ensure the 'answer' field matches EXACTLY one of the strings provided in the 'options' list.
-                    Provide short, crisp, and clear explanations {lang_instruction}.
-                    CRITICAL: EVERY SINGLE question, option, and explanation MUST be strictly generated {lang_instruction}.
+                    Provide detailed, step-by-step, clear and comprehensive explanations {lang_inst} so the student can easily understand the logic and solution.
                     Output strictly in valid JSON format as a list of objects with keys: 
                     'question', 'options', 'answer', 'explanation'.
                     Text: {pdf_text}
                     """
+                    st.session_state.last_prompt_text = prompt
+                    st.session_state.active_quiz_lang = lang_opt
+                    
                     raw_text = generate_quiz_with_fallback(prompt)
                     parsed_quiz = parse_json_safely(raw_text)
                     
@@ -347,14 +354,14 @@ elif page == "pyq_practice":
         """
         <div class="card" style="border: 1px solid #ff4b8b; text-align:center; padding: 30px; margin-top: 20px;">
             <h3>🚀 COMING SOON</h3>
-            <p><b>PYQ Practice पर काम जारी है! 🛠️</b></p>
-            <p>बहुत जल्द पिछले वर्षों के सभी प्रश्न और विस्तृत समाधान यहाँ उपलब्ध होंगे।</p>
-            <p style="color:#00d2ff; font-style:italic;">“तैयारी मजबूत होगी, थोड़ा इंतज़ार करें!” 🔥</p>
+            <p><b>PYQ Practice par kaam jari hai! 🛠️</b></p>
+            <p>Bahut jald pichle varsho ke sabhi prashn aur detailed samadhan yahan uplabdh honge.</p>
+            <p style="color:#00d2ff; font-style:italic;">“Taiyari majboot hogi, thoda intezaar karein!” 🔥</p>
         </div>
         """,
         unsafe_allow_html=True
     )
-    if st.button("🏠 Home पर जाएं", type="primary", use_container_width=True):
+    if st.button("🏠 Home par jaen", type="primary", use_container_width=True):
         st.session_state.page = "home"
         st.rerun()
 
@@ -364,21 +371,21 @@ elif page == "ai_practice":
         st.rerun()
         
     st.markdown("### 🤖 AI Practice")
-    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>AI से नए प्रश्न और मॉक टेस्ट • स्मार्ट प्रैक्टिस • बेहतर तैयारी</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>AI se naye prashn aur mock test • Smart practice • Behtar taiyari</p>", unsafe_allow_html=True)
     
-    selected_exam = st.selectbox("एग्जाम चुनें", list(exam_subjects_map.keys()), key="ai_exam_sel")
+    selected_exam = st.selectbox("Exam chunein", list(exam_subjects_map.keys()), key="ai_exam_sel")
     dynamic_subjects = exam_subjects_map.get(selected_exam, ["General Studies"])
-    selected_subject = st.selectbox("विषय चुनें", dynamic_subjects, key="ai_sub_box")
+    selected_subject = st.selectbox("Vishay chunein", dynamic_subjects, key="ai_sub_box")
     
-    num_q = st.selectbox("प्रश्नों की संख्या (Up to 200)", [10, 20, 30, 50, 100, 150, 200], index=1)
-    time_min = st.slider("टेस्ट का समय (मिनट में):", min_value=5, max_value=180, value=30, step=5)
+    num_q = st.selectbox("Prashno ki sankhya (Up to 200)", [10, 20, 30, 50, 100, 150, 200], index=1)
+    time_min = st.slider("Test ka samay (minute mein):", min_value=5, max_value=180, value=30, step=5)
     
-    st.markdown("#### भाषा (Language)")
-    lang_opt = st.selectbox("भाषा चुनें:", ["Hindi (हिंदी)", "English"], key="ai_lang_sel")
+    st.markdown("#### Bhasha (Language)")
+    lang_opt = st.selectbox("Bhasha chunein:", ["Hindi", "English"], key="ai_lang_sel")
     
-    st.markdown("#### Difficulty Level (स्तर चुनें)")
+    st.markdown("#### Kathinai star (Difficulty Level)")
     diff_options = ["Easy", "Medium", "Hard"]
-    selected_diff = st.radio("कठिनाई स्तर चुनें:", diff_options, horizontal=True, index=diff_options.index(st.session_state.ai_diff_level))
+    selected_diff = st.radio("Kathinai star chunein:", diff_options, horizontal=True, index=diff_options.index(st.session_state.ai_diff_level))
     st.session_state.ai_diff_level = selected_diff
     
     st.markdown("<br>", unsafe_allow_html=True)
@@ -388,15 +395,17 @@ elif page == "ai_practice":
         else:
             with st.spinner(f"Generating AI questions ({selected_diff})..."):
                 try:
-                    lang_instruction = "in pure and simple Hindi language" if "Hindi" in lang_opt else "in English language"
+                    lang_inst = "in pure and simple Hindi language" if lang_opt == "Hindi" else "in English language"
                     prompt = f"""
                     Generate {num_q} MCQs for {selected_exam} on subject '{selected_subject}' with 4 options each.
                     Difficulty: {selected_diff}.
                     CRITICAL: The 'answer' field MUST match EXACTLY one of the strings given in the 'options' list. 
-                    Provide short, concise, and clear explanations {lang_instruction}.
-                    CRITICAL: EVERY SINGLE question, option, and explanation MUST be strictly generated {lang_instruction}.
+                    Provide detailed, step-by-step, clear and comprehensive explanations {lang_inst} so the student can easily understand the logic and solution.
                     Output strictly in valid JSON list format with keys: 'question', 'options', 'answer', 'explanation'.
                     """
+                    st.session_state.last_prompt_text = prompt
+                    st.session_state.active_quiz_lang = lang_opt
+                    
                     raw_text = generate_quiz_with_fallback(prompt)
                     parsed_quiz = parse_json_safely(raw_text)
                     
@@ -417,16 +426,16 @@ elif page == "quick_access":
         st.rerun()
         
     st.markdown("### ⚡ QUICK ACCESS")
-    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>अपना एग्जाम चुनें</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>Apna exam chunein</p>", unsafe_allow_html=True)
     
     if st.session_state.get("show_coming_soon", False):
         st.markdown(
             """
             <div class="card" style="border: 1px solid #ff4b8b; text-align:center; padding: 25px;">
                 <h3>🚀 COMING SOON</h3>
-                <p><b>अभी काम कुछ समय के लिए रुका हुआ है।</b></p>
-                <p>अभी Depression का दौर चल रहा है, इसलिए काम बंद है। ❤️‍🩹</p>
-                <p>अभी वक्त मुश्किल है, लेकिन वापसी होगी और धमाका बड़ा करेंगे! 🔥</p>
+                <p><b>Abhi kaam kuch samay ke liye ruka hua hai.</b></p>
+                <p>Abhi Depression ka daur chal raha hai, isliye kaam band hai। ❤️‍🩹</p>
+                <p>Abhi wakt mushkil hai, lekin wapsi hogi aur dhamaka bada karenge! 🔥</p>
             </div>
             """,
             unsafe_allow_html=True
@@ -440,15 +449,16 @@ elif page == "quick_access":
             if st.button("🏛️ SSC CGL\nAvailable", use_container_width=True):
                 st.session_state.current_exam_info = "Quick Access: SSC CGL"
                 st.session_state.quiz_data = [{
-                    "question": "भारत का संविधान कब लागू हुआ था?",
+                    "question": "भारत का संविधान कब लागू हुआ था? (When was the Constitution of India implemented?)",
                     "options": ["26 जनवरी 1950", "15 अगस्त 1947", "26 नवंबर 1949", "2 अक्टूबर 1950"],
                     "answer": "26 जनवरी 1950",
-                    "explanation": "संविधान 26 जनवरी 1950 को पूर्ण रूप से लागू हुआ था।"
+                    "explanation": "विस्तृत समाधान: भारतीय संविधान को 26 नवंबर 1949 को अपनाया गया था और यह पूर्ण रूप से 26 जनवरी 1950 को लागू हुआ था, इसी उपलक्ष्य में गणतंत्र दिवस मनाया जाता है।"
                 }] * 10
                 st.session_state.user_answers = {}
                 st.session_state.current_q_index = 0
                 st.session_state.quiz_start_time = time.time()
                 st.session_state.quiz_duration_mins = 20
+                st.session_state.active_quiz_lang = "Hindi"
                 st.session_state.page = "take_quiz"
                 st.rerun()
             if st.button("🛡️ SSC GD\nComing Soon", use_container_width=True):
@@ -473,21 +483,14 @@ elif page == "quick_access":
             if st.button("🎖️ Defence\nComing Soon", use_container_width=True):
                 st.session_state.show_coming_soon = True
                 st.rerun()
-
-elif page == "study_dashboard":
-    if st.button("⬅ Back"):
-        st.session_state.page = "home"
-        st.rerun()
-    st.markdown("### 📈 Study Dashboard & History")
-    total_tests = len(st.session_state.quiz_history)
-    st.markdown(f"<div class='card'><b>कुल दिए गए टेस्ट:</b> {total_tests}</div>", unsafe_allow_html=True)
+>Kul diye gaye test:</b> {total_tests}</div>", unsafe_allow_html=True)
     if st.session_state.quiz_history:
         for rec in reversed(st.session_state.quiz_history):
             st.markdown(f"<div class='card'><b>{rec['exam_info']}</b><br>Score: {rec['score']}/{rec['total']} ({rec['percentage']}%)</div>", unsafe_allow_html=True)
 
 elif page == "take_quiz":
     if not st.session_state.quiz_data:
-        st.warning("कोई सक्रिय क्विज़ उपलब्ध नहीं है।")
+        st.warning("Koi sakriya quiz uplabdh nahi hai.")
         if st.button("Home"):
             st.session_state.page = "home"
             st.rerun()
@@ -496,30 +499,44 @@ elif page == "take_quiz":
         format_total_q = len(quiz)
         curr_idx = st.session_state.current_q_index
         
-        col_tb1, col_tb2, col_tb3 = st.columns([1, 1, 1.2])
+        col_tb1, col_tb2 = st.columns([1, 1.4])
         with col_tb1:
             if st.button("⬅ Back", use_container_width=True):
                 st.session_state.page = "home"
                 st.rerun()
         with col_tb2:
-            st.selectbox("Lang", ["Hindi (हिंदी)", "English"], key="active_in_quiz_lang", label_visibility="collapsed")
-        with col_tb3:
             elapsed_seconds = int(time.time() - st.session_state.quiz_start_time)
             total_allowed_seconds = st.session_state.quiz_duration_mins * 60
             remaining_seconds = max(0, total_allowed_seconds - elapsed_seconds)
             rem_mins = remaining_seconds // 60
             rem_secs = remaining_seconds % 60
             
-            st.markdown(
-                f"""
-                <div style="text-align: right; padding-top: 5px;">
-                    <span style="color: #ff4b8b; font-weight: bold; font-size: 12px; background: #160d26; padding: 4px 6px; border-radius: 8px; border: 1px solid #2a1b48;">
-                        ⏱️ {rem_mins:02d}:{rem_secs:02d} | Q {curr_idx + 1}/{format_total_q}
-                    </span>
-                </div>
-                """, 
-                unsafe_allow_html=True
-            )
+            sub_c1, sub_c2 = st.columns([1, 1])
+            with sub_c1:
+                new_lang = st.selectbox("Lang", ["Hindi", "English"], key="active_in_quiz_lang", label_visibility="collapsed")
+                # Real-time language translation trigger if user changes it during test
+                if new_lang != st.session_state.active_quiz_lang and st.session_state.last_prompt_text:
+                    st.session_state.active_quiz_lang = new_lang
+                    with st.spinner(f"Translating quiz to {new_lang}..."):
+                        try:
+                            lang_inst = "in pure and simple Hindi language" if new_lang == "Hindi" else "in English language"
+                            updated_prompt = re.sub(r'in (pure and simple Hindi language|English language)', lang_inst, st.session_state.last_prompt_text)
+                            raw_text = generate_quiz_with_fallback(updated_prompt)
+                            st.session_state.quiz_data = parse_json_safely(raw_text)
+                            st.rerun()
+                        except Exception as ex:
+                            st.error(f"Translation failed: {ex}")
+            with sub_c2:
+                st.markdown(
+                    f"""
+                    <div style="text-align: right; padding-top: 6px;">
+                        <span style="color: #ff4b8b; font-weight: bold; font-size: 11px; background: #160d26; padding: 4px 6px; border-radius: 6px; border: 1px solid #2a1b48;">
+                            ⏱️ {rem_mins:02d}:{rem_secs:02d} | Q {curr_idx + 1}/{format_total_q}
+                        </span>
+                    </div>
+                    """, 
+                    unsafe_allow_html=True
+                )
         
         st.markdown(f"<b style='color:#00d2ff;'>{st.session_state.current_exam_info}</b>", unsafe_allow_html=True)
         st.markdown("---")
@@ -535,7 +552,7 @@ elif page == "take_quiz":
         except ValueError:
             def_idx = None
             
-        chosen_opt = st.radio("विकल्प चुनें:", q['options'], index=def_idx, key=f"rad_{curr_idx}")
+        chosen_opt = st.radio("Vikalp chunein:", q['options'], index=def_idx, key=f"rad_{curr_idx}")
         st.session_state.user_answers[curr_idx] = chosen_opt
         st.markdown("---")
         
@@ -563,7 +580,7 @@ elif page == "take_quiz":
             st.rerun()
 
         if remaining_seconds <= 0:
-            st.warning("समय समाप्त हो गया है! टेस्ट स्वतः सबमिट हो रहा है...")
+            st.warning("Samay samapt ho gaya hai! Test swatah submit ho raha hai...")
             time.sleep(2)
             score = sum(1 for i, item in enumerate(quiz) if st.session_state.user_answers.get(i) == item['answer'])
             percentage = round((score / format_total_q) * 100, 1) if format_total_q > 0 else 0
@@ -600,13 +617,13 @@ elif page == "quiz_results":
             <hr style="border-color:#2a1b48; margin:15px 0;">
             <div style="display:flex; justify-content:space-around;">
                 <div style="background:#0b3c22; padding:12px 25px; border-radius:12px; border:1px solid #00e676;">
-                    <b style="font-size:20px; color:#00e676;">{score}</b><br><span style="font-size:13px; color:#ffffff;">सही</span>
+                    <b style="font-size:20px; color:#00e676;">{score}</b><br><span style="font-size:13px; color:#ffffff;">Sahi</span>
                 </div>
                 <div style="background:#4a1525; padding:12px 25px; border-radius:12px; border:1px solid #ff5252;">
-                    <b style="font-size:20px; color:#ff5252;">{incorrect}</b><br><span style="font-size:13px; color:#ffffff;">गलत</span>
+                    <b style="font-size:20px; color:#ff5252;">{incorrect}</b><br><span style="font-size:13px; color:#ffffff;">Galat</span>
                 </div>
                 <div style="background:#261f3d; padding:12px 25px; border-radius:12px; border:1px solid #a855f7;">
-                    <b style="font-size:20px; color:#ffeb3b;">{unattempted}</b><br><span style="font-size:13px; color:#ffffff;">छोड़े गए</span>
+                    <b style="font-size:20px; color:#ffeb3b;">{unattempted}</b><br><span style="font-size:13px; color:#ffffff;">Chhode gaye</span>
                 </div>
             </div>
         </div>
@@ -625,7 +642,7 @@ elif page == "quiz_results":
             st.session_state.page = "home"
             st.rerun()
             
-    st.markdown("<p style='text-align:center; color:#b0a8c2; font-size:12px; margin-top:15px;'>रिजल्ट पहले दिखेगा, समाधान केवल Quiz Analysis दबाने पर।</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; color:#b0a8c2; font-size:12px; margin-top:15px;'>Result pehle dikhega, samadhan kewal Quiz Analysis dabane par.</p>", unsafe_allow_html=True)
 
 elif page == "quiz_analysis":
     if st.button("⬅ Back to Result"):
@@ -661,7 +678,7 @@ elif page == "quiz_analysis":
     current_default_idx = filter_options.index(st.session_state.analysis_filter) if st.session_state.analysis_filter in filter_options else 0
     
     selected_filter = st.radio(
-        "फ़िल्टर चुनें:",
+        "Filter chunein:",
         filter_options,
         index=current_default_idx,
         horizontal=True,
@@ -669,7 +686,7 @@ elif page == "quiz_analysis":
     )
     st.session_state.analysis_filter = selected_filter
     
-    st.markdown(f"#### वर्तमान फ़िल्टर: <span style='color:#00d2ff;'>{selected_filter} Questions</span>", unsafe_allow_html=True)
+    st.markdown(f"#### Vartaman Filter: <span style='color:#00d2ff;'>{selected_filter} Questions</span>", unsafe_allow_html=True)
     st.write("")
     
     for idx, q in enumerate(quiz):
@@ -678,28 +695,28 @@ elif page == "quiz_analysis":
         
         if chosen is None:
             status = "Skipped"
-            badge = "🟡 छोड़ा गया"
-            chosen_txt = "उत्तर नहीं दिया"
+            badge = "🟡 Chhoda gaya"
+            chosen_txt = "Uttar nahi diya"
         elif chosen == correct:
             status = "Correct"
-            badge = "🟢 सही"
+            badge = "🟢 Sahi"
             chosen_txt = chosen
         else:
             status = "Wrong"
-            badge = "🔴 गलत"
+            badge = "🔴 Galat"
             chosen_txt = chosen
             
         if st.session_state.analysis_filter != "All" and status != st.session_state.analysis_filter:
             continue
             
-        with st.expander(f"Prashn {idx+1}: {q['question']} [{badge}]"):
+        with st.expander(f"Prashn {idx + 1}: {q['question']} [{badge}]"):
             st.markdown(f"**Poora Prashn:**\n\n{q['question']}")
             st.markdown(f"Aapka Uttar: **{chosen_txt}**")
             st.markdown(f"Sahi Uttar: <span style='color: #00e676; font-weight: bold;'>{correct}</span>", unsafe_allow_html=True)
             st.markdown(
                 f"""
                 <div class="solution-box">
-                    <b>💡 Saral Samadhan:</b><br>{q.get('explanation', 'Samadhan uplabdh nahi hai.')}
+                    <b>💡 Detailed & Step-by-Step Samadhan:</b><br><br>{q.get('explanation', 'Samadhan uplabdh nahi hai.')}
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -709,3 +726,13 @@ elif page == "quiz_analysis":
     if st.button("🏠 Home par jaen", use_container_width=True, type="primary"):
         st.session_state.page = "home"
         st.rerun()
+elif page == "study_dashboard":
+    if st.button("⬅ Back"):
+        st.session_state.page = "home"
+        st.rerun()
+    st.markdown("### 📈 Study Dashboard & History")
+    total_tests = len(st.session_state.quiz_history)
+    st.markdown(f"<div class='card'><b>Kul diye gaye test:</b> {total_tests}</div>", unsafe_allow_html=True)
+    if st.session_state.quiz_history:
+        for rec in reversed(st.session_state.quiz_history):
+            st.markdown(f"<div class='card'><b
