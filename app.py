@@ -84,7 +84,7 @@ client = get_gemini_client()
 # --- MODEL FALLBACK FUNCTION (Flash Models) ---
 def generate_quiz_with_fallback(prompt_text):
     if not client:
-        raise Exception("Gemini API Key set nahi hai!")
+        raise Exception("API Key missing!")
     
     models_to_try = [
         "gemini-3.8-flash",
@@ -106,7 +106,7 @@ def generate_quiz_with_fallback(prompt_text):
             last_error = e
             continue
             
-    raise Exception(f"Server par high demand hai. Kripya punah prayas karein. Error: {last_error}")
+    raise Exception(f"Server par high demand hai. Error: {last_error}")
 
 # --- SESSION STATE INITIALIZATION ---
 if "page" not in st.session_state:
@@ -327,7 +327,6 @@ elif page == "study_dashboard":
         for rec in reversed(st.session_state.quiz_history):
             st.markdown(f"<div class='card'><b>{rec['exam_info']}</b><br>Score: {rec['score']}/{rec['total']} ({rec['percentage']}%)</div>", unsafe_allow_html=True)
 
-# --- TAKE QUIZ (PW Style: Timer, Language Toggle, Index Palette & Single View) ---
 elif page == "take_quiz":
     if not st.session_state.quiz_data:
         st.warning("कोई सक्रिय क्विज़ उपलब्ध नहीं है।")
@@ -413,8 +412,7 @@ elif page == "take_quiz":
                 })
                 st.session_state.page = "quiz_results"
                 st.rerun()
-
-# --- PW STYLE RESULTS & FILTERABLE ANALYSIS ---
+                                                    # --- PW STYLE RESULTS & FILTERABLE ANALYSIS ---
 elif page == "quiz_results":
     if st.button("🏠 Home"):
         st.session_state.page = "home"
@@ -492,4 +490,9 @@ elif page == "quiz_results":
     st.markdown(
         """
         <div style="text-align:center; color:#b0a8c2; margin-top:20px; font-style:italic;">
-        “मेहनत कभी बेकार नहीं जाती, बस समय लगता ह
+        “मेहनत कभी बेकार नहीं जाती, बस समय लगता है।”<br>— Prateek Senmar
+        </div>
+        """,
+        unsafe_allow_html=True
+)
+                                                                                                                
