@@ -267,9 +267,6 @@ elif page == "pdf_quiz":
         
     st.markdown("#### टाइमर / समय")
     time_min = st.slider("टेस्ट का समय (मिनट में):", min_value=5, max_value=180, value=30, step=5)
-        
-    st.markdown("#### भाषा (Language)")
-    lang_opt = st.selectbox("भाषा चुनें:", ["Hindi (हिंदी)", "English"])
     
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 क्विज़ बनाएँ", type="primary", use_container_width=True):
@@ -291,8 +288,8 @@ elif page == "pdf_quiz":
                     prompt = f"""
                     Based strictly on the text for '{selected_subject}', generate {num_q} MCQs with 4 options each.
                     Ensure the 'answer' field matches EXACTLY one of the strings provided in the 'options' list.
-                    Provide short, crisp, and clear explanations in Hindi (not too long, simple to understand).
-                    CRITICAL: All questions, options, and explanations MUST be in pure and simple Hindi.
+                    Provide short, crisp, and clear explanations in pure Hindi.
+                    CRITICAL: EVERY SINGLE question, option, and explanation MUST be strictly and completely translated into pure and simple Hindi language. No English text allowed in questions or options.
                     Output strictly in valid JSON format as a list of objects with keys: 
                     'question', 'options', 'answer', 'explanation'.
                     Text: {pdf_text}
@@ -369,7 +366,8 @@ elif page == "ai_practice":
                     Generate {num_q} MCQs for {selected_exam} on subject '{selected_subject}' with 4 options each.
                     Difficulty: {selected_diff}.
                     CRITICAL: The 'answer' field MUST match EXACTLY one of the strings given in the 'options' list. 
-                    Provide short, concise, and clear explanations in Hindi (easy to understand, not bulky).
+                    Provide short, concise, and clear explanations in pure Hindi.
+                    CRITICAL: EVERY SINGLE question, option, and explanation MUST be strictly and completely translated into pure and simple Hindi language. No English text allowed.
                     Output strictly in valid JSON list format with keys: 'question', 'options', 'answer', 'explanation'.
                     """
                     raw_text = generate_quiz_with_fallback(prompt)
@@ -476,15 +474,13 @@ elif page == "take_quiz":
         format_total_q = len(quiz)
         curr_idx = st.session_state.current_q_index
         
-        # Top bar with Back to Home button, Language selector, and Timer/Question count
-        col_tb1, col_tb2, col_tb3 = st.columns([1, 1, 1])
+        # Top bar with Back to Home button and Timer/Question count
+        col_tb1, col_tb2 = st.columns([1, 1])
         with col_tb1:
             if st.button("⬅ Back to Home", use_container_width=True):
                 st.session_state.page = "home"
                 st.rerun()
         with col_tb2:
-            st.selectbox("Language", ["Hindi (हिंदी)", "English"], key="active_lang_sel", label_visibility="collapsed")
-        with col_tb3:
             elapsed_seconds = int(time.time() - st.session_state.quiz_start_time)
             total_allowed_seconds = st.session_state.quiz_duration_mins * 60
             remaining_seconds = max(0, total_allowed_seconds - elapsed_seconds)
@@ -494,7 +490,7 @@ elif page == "take_quiz":
             st.markdown(
                 f"""
                 <div style="text-align: right; padding-top: 5px;">
-                    <span style="color: #ff4b8b; font-weight: bold; font-size: 13px; background: #160d26; padding: 4px 6px; border-radius: 8px; border: 1px solid #2a1b48;">
+                    <span style="color: #ff4b8b; font-weight: bold; font-size: 13px; background: #160d26; padding: 4px 8px; border-radius: 8px; border: 1px solid #2a1b48;">
                         ⏱️ {rem_mins:02d}:{rem_secs:02d} | Q {curr_idx + 1}/{format_total_q}
                     </span>
                 </div>
@@ -670,7 +666,6 @@ elif page == "quiz_analysis":
             badge = "🔴 गलत"
             chosen_txt = chosen
             
-        # Strictly show only matching category based on active filter
         if st.session_state.analysis_filter != "All" and status != st.session_state.analysis_filter:
             continue
             
