@@ -435,7 +435,7 @@ elif page == "quick_access":
                 <h3>🚀 COMING SOON</h3>
                 <p><b>Abhi kaam kuch samay ke liye ruka hua hai.</b></p>
                 <p>Abhi Depression ka daur chal raha hai, isliye kaam band hai। ❤️‍🩹</p>
-                <p>Abhi wakt mushkil hai, lekin wapsi hogi aur dhamaka bada करेंगे! 🔥</p>
+                <p>Abhi wakt mushkil hai, lekin wapsi hogi aur dhamaka bada karenge! 🔥</p>
             </div>
             """,
             unsafe_allow_html=True
