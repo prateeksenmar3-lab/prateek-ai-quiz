@@ -154,22 +154,22 @@ if "last_prompt_text" not in st.session_state:
 # --- EXAM WISE SUBJECTS MAPPING ---
 exam_subjects_map = {
     "SSC CGL": [
-        "Quantitative Aptitude (गणित)",
-        "General Intelligence & Reasoning (तर्कशक्ति)",
+        "Quantitative Aptitude (Ganit)",
+        "General Intelligence & Reasoning (Tarkshakti)",
         "English Comprehension",
         "General Awareness / GS",
         "Complete SSC CGL Tier-1 Mock"
     ],
     "SSC GD": [
-        "General Intelligence & Reasoning (तर्कशक्ति)",
+        "General Intelligence & Reasoning (Tarkshakti)",
         "General Knowledge & General Awareness",
-        "Elementary Mathematics (गणित)",
+        "Elementary Mathematics (Ganit)",
         "Hindi / English",
         "Complete SSC GD Mock Test"
     ],
     "SSC CHSL": [
-        "Quantitative Aptitude (गणित)",
-        "Reasoning (तर्कशक्ति)",
+        "Quantitative Aptitude (Ganit)",
+        "Reasoning (Tarkshakti)",
         "English Language",
         "General Awareness"
     ],
@@ -186,7 +186,7 @@ exam_subjects_map = {
         "General Knowledge & General Awareness"
     ],
     "Railway RRB NTPC": [
-        "Mathematics (गणित)",
+        "Mathematics (Ganit)",
         "General Intelligence & Reasoning",
         "General Awareness & Current Affairs",
         "Complete RRB NTPC CBT-1 Mock"
@@ -204,7 +204,7 @@ exam_subjects_map = {
         "Complete UPSC Prelims GS Mock"
     ],
     "UP Police Constable / SI": [
-        "General Hindi (सामान्य हिंदी)",
+        "General Hindi",
         "Numerical & Mental Ability",
         "Mental Aptitude / IQ / Reasoning",
         "General Knowledge / UP GK"
