@@ -119,6 +119,8 @@ if "current_q_index" not in st.session_state:
     st.session_state.current_q_index = 0
 if "show_coming_soon" not in st.session_state:
     st.session_state.show_coming_soon = False
+if "analysis_filter" not in st.session_state:
+    st.session_state.analysis_filter = "All"
 
 # --- SUBJECTS LIST ---
 subjects_list = [
@@ -222,7 +224,7 @@ elif page == "pdf_quiz":
         if not client:
             st.error("API Key missing!")
         else:
-            with st.spinner("Processing PDF with Flash AI..."):
+            with st.spinner("Processing PDF with Flash AI in pure Hindi..."):
                 try:
                     reader = PdfReader(uploaded_file) if uploaded_file else None
                     pdf_text = ""
@@ -237,7 +239,7 @@ elif page == "pdf_quiz":
                     lang_instruction = "completely in pure and simple Hindi." if "Hindi" in lang_opt else "in English."
                     prompt = f"""
                     Based strictly on the text for '{selected_subject}', generate {num_q} MCQs with 4 options each.
-                    CRITICAL: All questions, options, and explanations MUST be {lang_instruction}
+                    CRITICAL: All questions, options, and explanations MUST be in pure and simple Hindi.
                     Output strictly in valid JSON format as a list of objects with keys: 
                     'question', 'options', 'answer', 'explanation'.
                     Text: {pdf_text}
@@ -381,7 +383,7 @@ elif page == "quick_access":
                     "question": "भारत का संविधान कब लागू हुआ था?",
                     "options": ["26 जनवरी 1950", "15 अगस्त 1947", "26 नवंबर 1949", "2 अक्टूबर 1950"],
                     "answer": "26 जनवरी 1950",
-                    "explanation": "संविधान 26 जनवरी 1950 को लागू हुआ था।"
+                    "explanation": "संविधान 26 जनवरी 1950 को पूर्ण रूप से लागू हुआ था।"
                 }] * 10
                 st.session_state.user_answers = {}
                 st.session_state.current_q_index = 0
@@ -431,15 +433,19 @@ elif page == "take_quiz":
         quiz = st.session_state.quiz_data
         total_q = len(quiz)
         
-        st.markdown(
-            f"""
-            <div class="pw-top-bar">
-                <span>हिंदी | English</span>
-                <span class="pw-timer">⏱️ 18:45 &nbsp;&nbsp; प्रश्न {st.session_state.current_q_index + 1}/{total_q}</span>
-            </div>
-            """, 
-            unsafe_allow_html=True
-        )
+        # Functional Top Bar with Language & Timer
+        col_tb1, col_tb2 = st.columns([1, 1])
+        with col_tb1:
+            quiz_lang = st.selectbox("Language", ["Hindi (हिंदी)", "English"], key="active_lang_sel", label_visibility="collapsed")
+        with col_tb2:
+            st.markdown(
+                f"""
+                <div style="text-align: right; padding-top: 5px;">
+                    <span class="pw-timer">⏱️ 18:45 &nbsp;&nbsp; प्रश्न {st.session_state.current_q_index + 1}/{total_q}</span>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
         
         st.markdown(f"<b style='color:#00d2ff;'>{st.session_state.current_exam_info}</b>", unsafe_allow_html=True)
         st.markdown("---")
@@ -517,18 +523,21 @@ elif page == "quiz_results":
         unsafe_allow_html=True,
     )
     
-    if st.button("📊 Quiz Analysis", use_container_width=True, type="primary"):
-        st.session_state.page = "quiz_analysis"
-        st.rerun()
-        
-    if st.button("🏠 Home", use_container_width=True):
-        st.session_state.page = "home"
-        st.rerun()
-        
+    c_res1, c_res2 = st.columns(2)
+    with c_res1:
+        if st.button("📊 Quiz Analysis", use_container_width=True, type="primary"):
+            st.session_state.analysis_filter = "All"
+            st.session_state.page = "quiz_analysis"
+            st.rerun()
+    with c_res2:
+        if st.button("🏠 Home", use_container_width=True):
+            st.session_state.page = "home"
+            st.rerun()
+            
     st.markdown("<p style='text-align:center; color:#b0a8c2; font-size:12px; margin-top:15px;'>रिजल्ट पहले दिखेगा, समाधान केवल Quiz Analysis दबाने पर।</p>", unsafe_allow_html=True)
 
 elif page == "quiz_analysis":
-    if st.button("⬅ Back"):
+    if st.button("⬅ Back to Result"):
         st.session_state.page = "quiz_results"
         st.rerun()
         
@@ -541,62 +550,67 @@ elif page == "quiz_analysis":
     wrong_count = sum(1 for idx, q in enumerate(quiz) if user_ans.get(idx) is not None and user_ans.get(idx) != q['answer'])
     skipped_count = sum(1 for idx in range(total) if user_ans.get(idx) is None)
     
-    st.markdown(
-        f"""
-        <div class="card" style="background:#0b3c22; border:1px solid #00e676; padding:15px; margin-bottom:10px;">
-            <b style="font-size:16px;">Correct Questions</b>
-            <span style="float:right; font-size:20px;"><b>{correct_count}</b></span><br>
-            <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →</span>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    
-    st.markdown(
-        f"""
-        <div class="card" style="background:#4a1525; border:1px solid #ff5252; padding:15px; margin-bottom:10px;">
-            <b style="font-size:16px;">Wrong Questions</b>
-            <span style="float:right; font-size:20px;"><b>{wrong_count}</b></span><br>
-            <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →</span>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    
-    st.markdown(
-        f"""
-        <div class="card" style="background:#261f3d; border:1px solid #a855f7; padding:15px; margin-bottom:15px;">
-            <b style="font-size:16px;">Skipped Questions</b>
-            <span style="float:right; font-size:20px;"><b>{skipped_count}</b></span><br>
-            <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →</span>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    
+    # Interactive Summary Cards to filter directly
+    col_a1, col_a2, col_a3 = st.columns(3)
+    with col_a1:
+        if st.button(f"🟢 Correct\n\n{correct_count}", use_container_width=True):
+            st.session_state.analysis_filter = "Correct"
+            st.rerun()
+    with col_a2:
+        if st.button(f"🔴 Wrong\n\n{wrong_count}", use_container_width=True):
+            st.session_state.analysis_filter = "Wrong"
+            st.rerun()
+    with col_a3:
+        if st.button(f"🟡 Skipped\n\n{skipped_count}", use_container_width=True):
+            st.session_state.analysis_filter = "Skipped"
+            st.rerun()
+            
     st.markdown("---")
-    st.markdown("#### विस्तृत समाधान (Detailed Solutions)")
+    
+    # Filter selection via radio buttons as well
+    filter_options = ["All", "Correct", "Wrong", "Skipped"]
+    current_default_idx = filter_options.index(st.session_state.analysis_filter) if st.session_state.analysis_filter in filter_options else 0
+    
+    selected_filter = st.radio(
+        "फ़िल्टर चुनें:",
+        filter_options,
+        index=current_default_idx,
+        horizontal=True,
+        key="analysis_radio_filter"
+    )
+    st.session_state.analysis_filter = selected_filter
+    
+    st.markdown(f"#### वर्तमान फ़िल्टर: <span style='color:#00d2ff;'>{selected_filter} Questions</span>", unsafe_allow_html=True)
+    st.write("")
     
     for idx, q in enumerate(quiz):
         chosen = user_ans.get(idx, None)
         correct = q['answer']
         
         if chosen is None:
+            status = "Skipped"
             badge = "🟡 छोड़ा गया"
             chosen_txt = "उत्तर नहीं दिया"
         elif chosen == correct:
+            status = "Correct"
             badge = "🟢 सही"
             chosen_txt = chosen
         else:
+            status = "Wrong"
             badge = "🔴 गलत"
             chosen_txt = chosen
+            
+        # Apply filter condition
+        if st.session_state.analysis_filter != "All" and status != st.session_state.analysis_filter:
+            continue
             
         with st.expander(f"प्रश्न {idx+1}: {q['question']} [{badge}]"):
             st.markdown(f"आपका उत्तर: **{chosen_txt}**")
             st.markdown(f"सही उत्तर: <span style='color: #00e676; font-weight: bold;'>{correct}</span>", unsafe_allow_html=True)
             st.markdown("---")
-            st.markdown(f"💡 **समाधान:**\n\n{q.get('explanation', 'समाधान उपलब्ध नहीं है।')}")
+            st.markdown(f"💡 **विस्तृत समाधान (Detailed Solution):**\n\n{q.get('explanation', 'समाधान उपलब्ध नहीं है।')}")
             
+    st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🏠 Home पर जाएं", use_container_width=True, type="primary"):
         st.session_state.page = "home"
         st.rerun()
