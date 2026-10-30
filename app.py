@@ -113,7 +113,6 @@ def parse_json_safely(raw_text):
     except json.JSONDecodeError:
         pass
         
-    # Attempt to extract json array bracket range
     match = re.search(r'\[\s*\{.*\}\s*\]', text, re.DOTALL)
     if match:
         try:
@@ -293,12 +292,15 @@ elif page == "pdf_quiz":
     st.markdown("#### टाइमर / समय")
     time_min = st.slider("टेस्ट का समय (मिनट में):", min_value=5, max_value=180, value=30, step=5)
     
+    st.markdown("#### भाषा (Language)")
+    lang_opt = st.selectbox("भाषा चुनें:", ["Hindi (हिंदी)", "English"])
+    
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 क्विज़ बनाएँ", type="primary", use_container_width=True):
         if not client:
             st.error("API Key missing!")
         else:
-            with st.spinner("Processing PDF with Flash AI in pure Hindi..."):
+            with st.spinner("Processing PDF with Flash AI..."):
                 try:
                     reader = PdfReader(uploaded_file) if uploaded_file else None
                     pdf_text = ""
@@ -310,11 +312,12 @@ elif page == "pdf_quiz":
                     else:
                         pdf_text = f"General questions for {selected_subject}"
                         
+                    lang_instruction = "in pure and simple Hindi language" if "Hindi" in lang_opt else "in English language"
                     prompt = f"""
                     Based strictly on the text for '{selected_subject}', generate {num_q} MCQs with 4 options each.
                     Ensure the 'answer' field matches EXACTLY one of the strings provided in the 'options' list.
-                    Provide short, crisp, and clear explanations in pure Hindi.
-                    CRITICAL: EVERY SINGLE question, option, and explanation MUST be strictly and completely translated into pure and simple Hindi language. No English text allowed in questions or options.
+                    Provide short, crisp, and clear explanations {lang_instruction}.
+                    CRITICAL: EVERY SINGLE question, option, and explanation MUST be strictly generated {lang_instruction}.
                     Output strictly in valid JSON format as a list of objects with keys: 
                     'question', 'options', 'answer', 'explanation'.
                     Text: {pdf_text}
@@ -370,6 +373,9 @@ elif page == "ai_practice":
     num_q = st.selectbox("प्रश्नों की संख्या (Up to 200)", [10, 20, 30, 50, 100, 150, 200], index=1)
     time_min = st.slider("टेस्ट का समय (मिनट में):", min_value=5, max_value=180, value=30, step=5)
     
+    st.markdown("#### भाषा (Language)")
+    lang_opt = st.selectbox("भाषा चुनें:", ["Hindi (हिंदी)", "English"], key="ai_lang_sel")
+    
     st.markdown("#### Difficulty Level (स्तर चुनें)")
     diff_options = ["Easy", "Medium", "Hard"]
     selected_diff = st.radio("कठिनाई स्तर चुनें:", diff_options, horizontal=True, index=diff_options.index(st.session_state.ai_diff_level))
@@ -380,14 +386,15 @@ elif page == "ai_practice":
         if not client:
             st.error("API Key missing!")
         else:
-            with st.spinner(f"Generating AI questions ({selected_diff}) in pure Hindi..."):
+            with st.spinner(f"Generating AI questions ({selected_diff})..."):
                 try:
+                    lang_instruction = "in pure and simple Hindi language" if "Hindi" in lang_opt else "in English language"
                     prompt = f"""
                     Generate {num_q} MCQs for {selected_exam} on subject '{selected_subject}' with 4 options each.
                     Difficulty: {selected_diff}.
                     CRITICAL: The 'answer' field MUST match EXACTLY one of the strings given in the 'options' list. 
-                    Provide short, concise, and clear explanations in pure Hindi.
-                    CRITICAL: EVERY SINGLE question, option, and explanation MUST be strictly and completely translated into pure and simple Hindi language. No English text allowed.
+                    Provide short, concise, and clear explanations {lang_instruction}.
+                    CRITICAL: EVERY SINGLE question, option, and explanation MUST be strictly generated {lang_instruction}.
                     Output strictly in valid JSON list format with keys: 'question', 'options', 'answer', 'explanation'.
                     """
                     raw_text = generate_quiz_with_fallback(prompt)
@@ -489,12 +496,14 @@ elif page == "take_quiz":
         format_total_q = len(quiz)
         curr_idx = st.session_state.current_q_index
         
-        col_tb1, col_tb2 = st.columns([1, 1])
+        col_tb1, col_tb2, col_tb3 = st.columns([1, 1, 1.2])
         with col_tb1:
-            if st.button("⬅ Back to Home", use_container_width=True):
+            if st.button("⬅ Back", use_container_width=True):
                 st.session_state.page = "home"
                 st.rerun()
         with col_tb2:
+            st.selectbox("Lang", ["Hindi (हिंदी)", "English"], key="active_in_quiz_lang", label_visibility="collapsed")
+        with col_tb3:
             elapsed_seconds = int(time.time() - st.session_state.quiz_start_time)
             total_allowed_seconds = st.session_state.quiz_duration_mins * 60
             remaining_seconds = max(0, total_allowed_seconds - elapsed_seconds)
@@ -504,7 +513,7 @@ elif page == "take_quiz":
             st.markdown(
                 f"""
                 <div style="text-align: right; padding-top: 5px;">
-                    <span style="color: #ff4b8b; font-weight: bold; font-size: 13px; background: #160d26; padding: 4px 8px; border-radius: 8px; border: 1px solid #2a1b48;">
+                    <span style="color: #ff4b8b; font-weight: bold; font-size: 12px; background: #160d26; padding: 4px 6px; border-radius: 8px; border: 1px solid #2a1b48;">
                         ⏱️ {rem_mins:02d}:{rem_secs:02d} | Q {curr_idx + 1}/{format_total_q}
                     </span>
                 </div>
@@ -683,20 +692,20 @@ elif page == "quiz_analysis":
         if st.session_state.analysis_filter != "All" and status != st.session_state.analysis_filter:
             continue
             
-        with st.expander(f"प्रश्न {idx+1}: {q['question'][:50]}... [{badge}]"):
-            st.markdown(f"**प्रश्न:** {q['question']}")
-            st.markdown(f"आपका उत्तर: **{chosen_txt}**")
-            st.markdown(f"सही उत्तर: <span style='color: #00e676; font-weight: bold;'>{correct}</span>", unsafe_allow_html=True)
+        with st.expander(f"Prashn {idx+1}: {q['question']} [{badge}]"):
+            st.markdown(f"**Poora Prashn:**\n\n{q['question']}")
+            st.markdown(f"Aapka Uttar: **{chosen_txt}**")
+            st.markdown(f"Sahi Uttar: <span style='color: #00e676; font-weight: bold;'>{correct}</span>", unsafe_allow_html=True)
             st.markdown(
                 f"""
                 <div class="solution-box">
-                    <b>💡 सरल समाधान:</b><br>{q.get('explanation', 'समाधान उपलब्ध नहीं है।')}
+                    <b>💡 Saral Samadhan:</b><br>{q.get('explanation', 'Samadhan uplabdh nahi hai.')}
                 </div>
                 """,
                 unsafe_allow_html=True
             )
             
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🏠 Home पर जाएं", use_container_width=True, type="primary"):
+    if st.button("🏠 Home par jaen", use_container_width=True, type="primary"):
         st.session_state.page = "home"
         st.rerun()
