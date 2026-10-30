@@ -98,6 +98,31 @@ def generate_quiz_with_fallback(prompt_text):
             continue
     raise Exception("Server par high demand hai. Kripya punah prayas karein.")
 
+def parse_json_safely(raw_text):
+    text = raw_text.strip()
+    if text.startswith("```json"):
+        text = text[7:]
+    elif text.startswith("```"):
+        text = text[3:]
+    if text.endswith("```"):
+        text = text[:-3]
+    text = text.strip()
+    
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+        
+    # Attempt to extract json array bracket range
+    match = re.search(r'\[\s*\{.*\}\s*\]', text, re.DOTALL)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except Exception:
+            pass
+            
+    raise Exception("JSON parsing failed. Kripya doosra test try karein.")
+
 # --- SESSION STATE INITIALIZATION ---
 if "page" not in st.session_state:
     st.session_state.page = "home"
@@ -295,13 +320,8 @@ elif page == "pdf_quiz":
                     Text: {pdf_text}
                     """
                     raw_text = generate_quiz_with_fallback(prompt)
-                    clean_res = raw_text.strip()
-                    if clean_res.startswith("```json"):
-                        clean_res = clean_res[7:-3].strip()
-                    elif clean_res.startswith("```"):
-                        clean_res = clean_res[3:-3].strip()
-                        
-                    parsed_quiz = json.loads(clean_res)
+                    parsed_quiz = parse_json_safely(raw_text)
+                    
                     st.session_state.quiz_data = parsed_quiz
                     st.session_state.user_answers = {}
                     st.session_state.current_q_index = 0
@@ -371,13 +391,8 @@ elif page == "ai_practice":
                     Output strictly in valid JSON list format with keys: 'question', 'options', 'answer', 'explanation'.
                     """
                     raw_text = generate_quiz_with_fallback(prompt)
-                    clean_res = raw_text.strip()
-                    if clean_res.startswith("```json"):
-                        clean_res = clean_res[7:-3].strip()
-                    elif clean_res.startswith("```"):
-                        clean_res = clean_res[3:-3].strip()
-                        
-                    parsed_quiz = json.loads(clean_res)
+                    parsed_quiz = parse_json_safely(raw_text)
+                    
                     st.session_state.quiz_data = parsed_quiz
                     st.session_state.user_answers = {}
                     st.session_state.current_q_index = 0
@@ -474,7 +489,6 @@ elif page == "take_quiz":
         format_total_q = len(quiz)
         curr_idx = st.session_state.current_q_index
         
-        # Top bar with Back to Home button and Timer/Question count
         col_tb1, col_tb2 = st.columns([1, 1])
         with col_tb1:
             if st.button("⬅ Back to Home", use_container_width=True):
