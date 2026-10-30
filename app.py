@@ -435,7 +435,7 @@ elif page == "quick_access":
                 <h3>🚀 COMING SOON</h3>
                 <p><b>Abhi kaam kuch samay ke liye ruka hua hai.</b></p>
                 <p>Abhi Depression ka daur chal raha hai, isliye kaam band hai। ❤️‍🩹</p>
-                <p>Abhi wakt mushkil hai, lekin wapsi hogi aur dhamaka bada karenge! 🔥</p>
+                <p>Abhi wakt mushkil hai, lekin wapsi hogi aur dhamaka bada करेंगे! 🔥</p>
             </div>
             """,
             unsafe_allow_html=True
@@ -483,10 +483,20 @@ elif page == "quick_access":
             if st.button("🎖️ Defence\nComing Soon", use_container_width=True):
                 st.session_state.show_coming_soon = True
                 st.rerun()
->Kul diye gaye test:</b> {total_tests}</div>", unsafe_allow_html=True)
+
+elif page == "study_dashboard":
+    if st.button("⬅ Back"):
+        st.session_state.page = "home"
+        st.rerun()
+    st.markdown("### 📈 Study Dashboard & History")
+    total_tests = len(st.session_state.quiz_history)
+    st.markdown(f'<div class="card"><b>Kul diye gaye test:</b> {total_tests}</div>', unsafe_allow_html=True)
     if st.session_state.quiz_history:
         for rec in reversed(st.session_state.quiz_history):
-            st.markdown(f"<div class='card'><b>{rec['exam_info']}</b><br>Score: {rec['score']}/{rec['total']} ({rec['percentage']}%)</div>", unsafe_allow_html=True)
+            st.markdown(f'<div class="card"><b>Kul diye gaye test:</b> {total_tests}</div>', unsafe_allow_html=True)
+    if st.session_state.quiz_history:
+        for rec in reversed(st.session_state.quiz_history):
+            st.markdown(f'<div class="card"><b>{rec["exam_info"]}</b><br>Score: {rec["score"]}/{rec["total"]} ({rec["percentage"]}%)</div>', unsafe_allow_html=True)
 
 elif page == "take_quiz":
     if not st.session_state.quiz_data:
@@ -514,7 +524,6 @@ elif page == "take_quiz":
             sub_c1, sub_c2 = st.columns([1, 1])
             with sub_c1:
                 new_lang = st.selectbox("Lang", ["Hindi", "English"], key="active_in_quiz_lang", label_visibility="collapsed")
-                # Real-time language translation trigger if user changes it during test
                 if new_lang != st.session_state.active_quiz_lang and st.session_state.last_prompt_text:
                     st.session_state.active_quiz_lang = new_lang
                     with st.spinner(f"Translating quiz to {new_lang}..."):
@@ -726,13 +735,3 @@ elif page == "quiz_analysis":
     if st.button("🏠 Home par jaen", use_container_width=True, type="primary"):
         st.session_state.page = "home"
         st.rerun()
-elif page == "study_dashboard":
-    if st.button("⬅ Back"):
-        st.session_state.page = "home"
-        st.rerun()
-    st.markdown("### 📈 Study Dashboard & History")
-    total_tests = len(st.session_state.quiz_history)
-    st.markdown(f"<div class='card'><b>Kul diye gaye test:</b> {total_tests}</div>", unsafe_allow_html=True)
-    if st.session_state.quiz_history:
-        for rec in reversed(st.session_state.quiz_history):
-            st.markdown(f"<div class='card'><b
