@@ -121,6 +121,8 @@ if "show_coming_soon" not in st.session_state:
     st.session_state.show_coming_soon = False
 if "analysis_filter" not in st.session_state:
     st.session_state.analysis_filter = "All"
+if "quiz_time_min" not in st.session_state:
+    st.session_state.quiz_time_min = 20
 
 # --- SUBJECTS LIST ---
 subjects_list = [
@@ -215,6 +217,7 @@ elif page == "pdf_quiz":
     st.markdown("#### टाइमर / समय")
     time_choice = st.selectbox("टेस्ट का समय चुनें:", ["15 मिनट", "30 मिनट", "60 मिनट", "अपनी पसंद (Custom)"])
     time_min = st.slider("मिनट चुनें:", 10, 120, 30, step=5) if "अपनी पसंद" in time_choice else int(time_choice.split(" ")[0])
+    st.session_state.quiz_time_min = time_min
         
     st.markdown("#### भाषा (Language)")
     lang_opt = st.selectbox("भाषा चुनें:", ["Hindi (हिंदी)", "English"])
@@ -236,7 +239,6 @@ elif page == "pdf_quiz":
                     else:
                         pdf_text = f"General questions for {selected_subject}"
                         
-                    lang_instruction = "completely in pure and simple Hindi." if "Hindi" in lang_opt else "in English."
                     prompt = f"""
                     Based strictly on the text for '{selected_subject}', generate {num_q} MCQs with 4 options each.
                     CRITICAL: All questions, options, and explanations MUST be in pure and simple Hindi.
@@ -269,34 +271,19 @@ elif page == "pyq_practice":
         st.session_state.page = "home"
         st.rerun()
         
-    st.markdown("### 🎓 PYQ Practice")
-    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>पिछले वर्षों के प्रश्न • असली PYQ • सही तारीख • विस्तृत समाधान</p>", unsafe_allow_html=True)
-    
-    selected_exam = st.selectbox("एग्जाम चुनें", ["SSC", "Railways", "UP Police", "अन्य उपलब्ध परीक्षाएँ"])
-    selected_subject = st.selectbox("विषय चुनें", ["General Mathematics (गणित)", "Reasoning (तर्कशक्ति)", "General Knowledge / GS (सामान्य ज्ञान)", "English Language (अंग्रेजी)"])
-    selected_year = st.selectbox("वर्ष चुनें", ["2023", "2022", "2021", "2020"])
-    
-    st.markdown("#### प्रश्नों की संख्या और टाइमर")
-    num_q = st.slider("प्रश्नों की संख्या चुनें:", 10, 100, 20, step=10)
-    time_min = st.slider("टेस्ट का समय (मिनट में):", 10, 60, 20, step=10)
-    
-    if st.button("🚀 शुरू करें", type="primary", use_container_width=True):
-        quiz_list = [
-            {
-                "question": f"[{selected_exam} {selected_year}] भारत का संविधान कब लागू हुआ था?",
-                "options": ["26 जनवरी 1950", "15 अगस्त 1947", "26 नवंबर 1949", "2 अक्टूबर 1950"],
-                "answer": "26 जनवरी 1950",
-                "explanation": "भारत का संविधान 26 जनवरी 1950 को पूर्ण रूप से लागू हुआ था।"
-            }
-        ]
-        st.session_state.quiz_data = quiz_list * max(1, num_q // len(quiz_list))
-        st.session_state.user_answers = {}
-        st.session_state.current_q_index = 0
-        st.session_state.current_exam_info = f"PYQ: {selected_exam} ({selected_year}) - {selected_subject}"
-        st.session_state.page = "take_quiz"
+    st.markdown(
+        """
+        <div class="card" style="border: 1px solid #ff4b8b; text-align:center; padding: 35px; margin-top: 30px;">
+            <h3>🚀 COMING SOON</h3>
+            <p><b>PYQ Practice पर काम जारी है! 🛠️</b></p>
+            <p>यह सेक्शन अभी तैयार किया जा रहा है, जल्द ही लाइव होगा। 🔥</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    if st.button("Back to Home", type="primary", use_container_width=True):
+        st.session_state.page = "home"
         st.rerun()
-        
-    st.markdown("<p style='font-size:12px; color:#b0a8c2; text-align:center; margin-top:15px;'>नोट: असली PYQ और AI से बने अभ्यास प्रश्न स्पष्ट रूप से अलग रहेंगे।</p>", unsafe_allow_html=True)
 
 elif page == "ai_practice":
     if st.button("⬅ Back"):
@@ -310,6 +297,7 @@ elif page == "ai_practice":
     selected_subject = st.selectbox("विषय चुनें", ["General Studies", "General Mathematics", "Reasoning", "English"], key="ai_sub_box")
     num_q = st.selectbox("प्रश्नों की संख्या", [10, 20, 30, 50, 100], index=1)
     time_min = st.selectbox("टाइमर (मिनट)", [10, 20, 30, 45, 60], index=1)
+    st.session_state.quiz_time_min = time_min
     
     st.markdown("#### Difficulty Level")
     diff_cols = st.columns(3)
@@ -387,6 +375,7 @@ elif page == "quick_access":
                 }] * 10
                 st.session_state.user_answers = {}
                 st.session_state.current_q_index = 0
+                st.session_state.quiz_time_min = 15
                 st.session_state.page = "take_quiz"
                 st.rerun()
             if st.button("🛡️ IB\nComing Soon", use_container_width=True):
@@ -433,19 +422,42 @@ elif page == "take_quiz":
         quiz = st.session_state.quiz_data
         total_q = len(quiz)
         
-        # Functional Top Bar with Language & Timer
+        # Working Live JavaScript Timer Component in Top Bar
+        total_seconds = int(st.session_state.get("quiz_time_min", 20) * 60)
+        
         col_tb1, col_tb2 = st.columns([1, 1])
         with col_tb1:
-            quiz_lang = st.selectbox("Language", ["Hindi (हिंदी)", "English"], key="active_lang_sel", label_visibility="collapsed")
+            st.selectbox("Language", ["Hindi (हिंदी)", "English"], key="active_lang_sel", label_visibility="collapsed")
         with col_tb2:
-            st.markdown(
-                f"""
-                <div style="text-align: right; padding-top: 5px;">
-                    <span class="pw-timer">⏱️ 18:45 &nbsp;&nbsp; प्रश्न {st.session_state.current_q_index + 1}/{total_q}</span>
-                </div>
-                """, 
-                unsafe_allow_html=True
-            )
+            # HTML/JS Live Countdown Timer
+            timer_html = f"""
+            <div style="text-align: right; padding-top: 5px;">
+                <span class="pw-timer" id="live-timer">⏱️ Loading Timer...</span>
+            </div>
+            <script>
+            (function () {{
+                var duration = {total_seconds};
+                var timerElement = document.getElementById('live-timer');
+                if (!timerElement) return;
+                
+                function updateTimer() {{
+                    var minutes = Math.floor(duration / 60);
+                    var seconds = duration % 60;
+                    minutes = minutes < 10 ? "0" + minutes : minutes;
+                    seconds = seconds < 10 ? "0" + seconds : seconds;
+                    timerElement.innerHTML = "⏱️ " + minutes + ":" + seconds + " &nbsp;&nbsp; प्रश्न {st.session_state.current_q_index + 1}/{total_q}";
+                    
+                    if (duration > 0) {{
+                        duration--;
+                    }}
+                }}
+                updateTimer();
+                if (window.quizInterval) clearInterval(window.quizInterval);
+                window.quizInterval = setInterval(updateTimer, 1000);
+            }})();
+            </script>
+            """
+            st.components.v1.html(timer_html, height=35)
         
         st.markdown(f"<b style='color:#00d2ff;'>{st.session_state.current_exam_info}</b>", unsafe_allow_html=True)
         st.markdown("---")
@@ -567,7 +579,6 @@ elif page == "quiz_analysis":
             
     st.markdown("---")
     
-    # Filter selection via radio buttons as well
     filter_options = ["All", "Correct", "Wrong", "Skipped"]
     current_default_idx = filter_options.index(st.session_state.analysis_filter) if st.session_state.analysis_filter in filter_options else 0
     
