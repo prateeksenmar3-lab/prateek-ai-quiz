@@ -147,7 +147,7 @@ if "quiz_duration_mins" not in st.session_state:
 if "ai_diff_level" not in st.session_state:
     st.session_state.ai_diff_level = "Medium"
 if "active_quiz_lang" not in st.session_state:
-    st.session_state.active_quiz_lang = "Hindi"
+    st.session_state.active_quiz_lang = "हि v"
 if "last_prompt_text" not in st.session_state:
     st.session_state.last_prompt_text = ""
 
@@ -298,7 +298,7 @@ elif page == "pdf_quiz":
     time_min = st.slider("Test ka samay (minute mein):", min_value=5, max_value=180, value=30, step=5)
     
     st.markdown("#### Bhasha (Language)")
-    lang_opt = st.selectbox("Bhasha chunein:", ["Hindi", "English"])
+    lang_opt = st.selectbox("Bhasha chunein:", ["हि v", "En v"])
     
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 Quiz Banayein", type="primary", use_container_width=True):
@@ -317,7 +317,7 @@ elif page == "pdf_quiz":
                     else:
                         pdf_text = f"General questions for {selected_subject}"
                         
-                    lang_inst = "in pure and simple Hindi language" if lang_opt == "Hindi" else "in English language"
+                    lang_inst = "in pure and simple Hindi language" if lang_opt == "हि v" else "in English language"
                     prompt = f"""
                     Based strictly on the text for '{selected_subject}', generate {num_q} MCQs with 4 options each.
                     Ensure the 'answer' field matches EXACTLY one of the strings provided in the 'options' list.
@@ -381,7 +381,7 @@ elif page == "ai_practice":
     time_min = st.slider("Test ka samay (minute mein):", min_value=5, max_value=180, value=30, step=5)
     
     st.markdown("#### Bhasha (Language)")
-    lang_opt = st.selectbox("Bhasha chunein:", ["Hindi", "English"], key="ai_lang_sel")
+    lang_opt = st.selectbox("Bhasha chunein:", ["हि v", "En v"], key="ai_lang_sel")
     
     st.markdown("#### Kathinai star (Difficulty Level)")
     diff_options = ["Easy", "Medium", "Hard"]
@@ -395,7 +395,7 @@ elif page == "ai_practice":
         else:
             with st.spinner(f"Generating AI questions ({selected_diff})..."):
                 try:
-                    lang_inst = "in pure and simple Hindi language" if lang_opt == "Hindi" else "in English language"
+                    lang_inst = "in pure and simple Hindi language" if lang_opt == "हि v" else "in English language"
                     prompt = f"""
                     Generate {num_q} MCQs for {selected_exam} on subject '{selected_subject}' with 4 options each.
                     Difficulty: {selected_diff}.
@@ -458,7 +458,7 @@ elif page == "quick_access":
                 st.session_state.current_q_index = 0
                 st.session_state.quiz_start_time = time.time()
                 st.session_state.quiz_duration_mins = 20
-                st.session_state.active_quiz_lang = "Hindi"
+                st.session_state.active_quiz_lang = "हि v"
                 st.session_state.page = "take_quiz"
                 st.rerun()
             if st.button("🛡️ SSC GD\nComing Soon", use_container_width=True):
@@ -493,9 +493,6 @@ elif page == "study_dashboard":
     st.markdown(f'<div class="card"><b>Kul diye gaye test:</b> {total_tests}</div>', unsafe_allow_html=True)
     if st.session_state.quiz_history:
         for rec in reversed(st.session_state.quiz_history):
-            st.markdown(f'<div class="card"><b>Kul diye gaye test:</b> {total_tests}</div>', unsafe_allow_html=True)
-    if st.session_state.quiz_history:
-        for rec in reversed(st.session_state.quiz_history):
             st.markdown(f'<div class="card"><b>{rec["exam_info"]}</b><br>Score: {rec["score"]}/{rec["total"]} ({rec["percentage"]}%)</div>', unsafe_allow_html=True)
 
 elif page == "take_quiz":
@@ -521,14 +518,14 @@ elif page == "take_quiz":
             rem_mins = remaining_seconds // 60
             rem_secs = remaining_seconds % 60
             
-            sub_c1, sub_c2 = st.columns([1, 1])
+            sub_c1, sub_c2 = st.columns([1, 1.2])
             with sub_c1:
-                new_lang = st.selectbox("Lang", ["Hindi", "English"], key="active_in_quiz_lang", label_visibility="collapsed")
+                new_lang = st.selectbox("Lang", ["हि v", "En v"], key="active_in_quiz_lang", label_visibility="collapsed")
                 if new_lang != st.session_state.active_quiz_lang and st.session_state.last_prompt_text:
                     st.session_state.active_quiz_lang = new_lang
                     with st.spinner(f"Translating quiz to {new_lang}..."):
                         try:
-                            lang_inst = "in pure and simple Hindi language" if new_lang == "Hindi" else "in English language"
+                            lang_inst = "in pure and simple Hindi language" if new_lang == "हि v" else "in English language"
                             updated_prompt = re.sub(r'in (pure and simple Hindi language|English language)', lang_inst, st.session_state.last_prompt_text)
                             raw_text = generate_quiz_with_fallback(updated_prompt)
                             st.session_state.quiz_data = parse_json_safely(raw_text)
