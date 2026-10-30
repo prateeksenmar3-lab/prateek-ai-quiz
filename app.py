@@ -60,20 +60,14 @@ st.markdown(
         margin-bottom: 12px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
-    .pw-top-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background: #160d26;
-        padding: 10px 15px;
-        border-radius: 12px;
-        border: 1px solid #2a1b48;
-        margin-bottom: 15px;
-    }
-    .pw-timer {
-        color: #ff4b8b;
-        font-weight: bold;
-        font-size: 16px;
+    .solution-box {
+        background: #101826;
+        border-left: 4px solid #00e676;
+        padding: 12px;
+        border-radius: 8px;
+        margin-top: 8px;
+        font-size: 14px;
+        color: #e0e0e0;
     }
     </style>
     """,
@@ -125,6 +119,8 @@ if "quiz_start_time" not in st.session_state:
     st.session_state.quiz_start_time = 0.0
 if "quiz_duration_mins" not in st.session_state:
     st.session_state.quiz_duration_mins = 20
+if "ai_diff_level" not in st.session_state:
+    st.session_state.ai_diff_level = "Medium"
 
 # --- EXAM WISE SUBJECTS MAPPING ---
 exam_subjects_map = {
@@ -171,18 +167,6 @@ exam_subjects_map = {
         "General Intelligence & Reasoning (तर्कशक्ति)",
         "General Science - Physics, Chemistry, Biology (सामान्य विज्ञान)",
         "General Awareness & Current Affairs (सामान्य जागरूकता)"
-    ],
-    "Railway RRB ALP (Assistant Loco Pilot)": [
-        "Mathematics & Basic Science (गणित एवं सामान्य विज्ञान)",
-        "General Intelligence & Reasoning (तर्कशक्ति)",
-        "General Awareness & Current Affairs (सामान्य ज्ञान)",
-        "Engineering Trade / Technical Basics"
-    ],
-    "Railway RRB JE (Junior Engineer)": [
-        "Mathematics (गणित)",
-        "General Awareness (सामान्य जागरूकता)",
-        "General Intelligence & Reasoning (तर्कशक्ति)",
-        "General Science & Technical Abilities (सामान्य विज्ञान एवं तकनीकी)"
     ],
     "UPSC Civil Services": [
         "General Studies Paper I (इतिहास, भूगोल, राजव्यवस्था, अर्थव्यवस्था)",
@@ -306,7 +290,8 @@ elif page == "pdf_quiz":
                         
                     prompt = f"""
                     Based strictly on the text for '{selected_subject}', generate {num_q} MCQs with 4 options each.
-                    If any question requires a chart, table, data graph or diagram representation, include clean text-based tables or markdown structures inside the question field so it displays perfectly.
+                    Ensure the 'answer' field matches EXACTLY one of the strings provided in the 'options' list.
+                    Provide short, crisp, and clear explanations in Hindi (not too long, simple to understand).
                     CRITICAL: All questions, options, and explanations MUST be in pure and simple Hindi.
                     Output strictly in valid JSON format as a list of objects with keys: 
                     'question', 'options', 'answer', 'explanation'.
@@ -342,8 +327,8 @@ elif page == "pyq_practice":
         """
         <div class="card" style="border: 1px solid #ff4b8b; text-align:center; padding: 30px; margin-top: 20px;">
             <h3>🚀 COMING SOON</h3>
-            <p><b>PYQ Practice पर काम जारी है! 🛠️</b></p>
-            <p>बहुत जल्द पिछले वर्षों के सभी प्रश्न और विस्तृत समाधान यहाँ उपलब्ध होंगे।</p>
+            <p><b>PYQ Practice पर काम जारी है! 🛠️</b></p
+                    <p>बहुत जल्द पिछले वर्षों के सभी प्रश्न और विस्तृत समाधान यहाँ उपलब्ध होंगे।</p>
             <p style="color:#00d2ff; font-style:italic;">“तैयारी मजबूत होगी, थोड़ा इंतज़ार करें!” 🔥</p>
         </div>
         """,
@@ -368,28 +353,23 @@ elif page == "ai_practice":
     num_q = st.selectbox("प्रश्नों की संख्या (Up to 200)", [10, 20, 30, 50, 100, 150, 200], index=1)
     time_min = st.slider("टेस्ट का समय (मिनट में):", min_value=5, max_value=180, value=30, step=5)
     
-    st.markdown("#### Difficulty Level")
-    diff_cols = st.columns(3)
-    with diff_cols[0]: easy_btn = st.button("Easy", use_container_width=True)
-    with diff_cols[1]: med_btn = st.button("Medium", use_container_width=True, type="primary")
-    with diff_cols[2]: mod_btn = st.button("Moderate", use_container_width=True)
-        
-    selected_diff = "Medium"
-    if easy_btn: selected_diff = "Easy"
-    if mod_btn: selected_diff = "Moderate"
+    st.markdown("#### Difficulty Level (स्तर चुनें)")
+    diff_options = ["Easy", "Medium", "Hard"]
+    selected_diff = st.radio("कठिनाई स्तर चुनें:", diff_options, horizontal=True, index=diff_options.index(st.session_state.ai_diff_level))
+    st.session_state.ai_diff_level = selected_diff
     
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🤖 Start AI Quiz", type="primary", use_container_width=True):
         if not client:
             st.error("API Key missing!")
         else:
-            with st.spinner("Generating AI questions in pure Hindi with graph/data structures..."):
+            with st.spinner(f"Generating AI questions ({selected_diff}) in pure Hindi..."):
                 try:
                     prompt = f"""
                     Generate {num_q} MCQs for {selected_exam} on subject '{selected_subject}' with 4 options each.
                     Difficulty: {selected_diff}.
-                    If any question involves graphs, data tables, or statistics, explicitly render them clearly using markdown tables or bullet charts inside the question text so the student can read it easily.
-                    CRITICAL: All questions, options, and explanations MUST be in pure Hindi.
+                    CRITICAL: The 'answer' field MUST match EXACTLY one of the strings given in the 'options' list. 
+                    Provide short, concise, and clear explanations in Hindi (easy to understand, not bulky).
                     Output strictly in valid JSON list format with keys: 'question', 'options', 'answer', 'explanation'.
                     """
                     raw_text = generate_quiz_with_fallback(prompt)
@@ -468,7 +448,6 @@ elif page == "quick_access":
             if st.button("🚆 RRB NTPC\nAvailable", use_container_width=True):
                 st.session_state.current_exam_info = "Quick Access: Railway RRB NTPC"
                 st.session_state.quiz_data = [{
-                    "options": ["भारतीय रेलवे बोर्ड की स्थापना कब हुई थी?", "1905", "1950", "1920", "1853"],
                     "question": "भारतीय रेलवे बोर्ड की स्थापना कब हुई थी?",
                     "options": ["1905", "1950", "1920", "1853"],
                     "answer": "1905",
@@ -550,20 +529,35 @@ elif page == "take_quiz":
     else:
         quiz = st.session_state.quiz_data
         format_total_q = len(quiz)
+        curr_idx = st.session_state.current_q_index
+        
+        # Timer & Question counter placed right above the question seamlessly
+        elapsed_seconds = int(time.time() - st.session_state.quiz_start_time)
+        total_allowed_seconds = st.session_state.quiz_duration_mins * 60
+        remaining_seconds = max(0, total_allowed_seconds - elapsed_seconds)
+        rem_mins = remaining_seconds // 60
+        rem_secs = remaining_seconds % 60
         
         col_tb1, col_tb2 = st.columns([1, 1])
         with col_tb1:
             st.selectbox("Language", ["Hindi (हिंदी)", "English"], key="active_lang_sel", label_visibility="collapsed")
         with col_tb2:
-            timer_placeholder = st.empty()
+            st.markdown(
+                f"""
+                <div style="text-align: right; padding-top: 5px;">
+                    <span style="color: #ff4b8b; font-weight: bold; font-size: 14px; background: #160d26; padding: 4px 8px; border-radius: 8px; border: 1px solid #2a1b48;">
+                        ⏱️ {rem_mins:02d}:{rem_secs:02d} | प्रश्न {curr_idx + 1}/{format_total_q}
+                    </span>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
         
         st.markdown(f"<b style='color:#00d2ff;'>{st.session_state.current_exam_info}</b>", unsafe_allow_html=True)
         st.markdown("---")
         
-        curr_idx = st.session_state.current_q_index
         q = quiz[curr_idx]
         
-        st.markdown(f"**प्रश्न {curr_idx + 1} / {format_total_q}**")
         st.markdown(f"**{q['question']}**")
         st.write("")
         
@@ -600,24 +594,6 @@ elif page == "take_quiz":
             st.session_state.page = "quiz_results"
             st.rerun()
 
-        # Fixed Global Countdown Timer (No Reset on Question Change)
-        elapsed_seconds = int(time.time() - st.session_state.quiz_start_time)
-        total_allowed_seconds = st.session_state.quiz_duration_mins * 60
-        remaining_seconds = max(0, total_allowed_seconds - elapsed_seconds)
-        rem_mins = remaining_seconds // 60
-        rem_secs = remaining_seconds % 60
-        
-        timer_placeholder.markdown(
-            f"""
-            <div style="text-align: right; padding-top: 5px;">
-                <span style="color: #ff4b8b; font-weight: bold; font-size: 15px; background: #160d26; padding: 4px 8px; border-radius: 8px; border: 1px solid #2a1b48;">
-                    ⏱️ {rem_mins:02d}:{rem_secs:02d} | प्रश्न {curr_idx + 1}/{format_total_q}
-                </span>
-            </div>
-            """, 
-            unsafe_allow_html=True
-        )
-        
         if remaining_seconds <= 0:
             st.warning("समय समाप्त हो गया है! टेस्ट स्वतः सबमिट हो रहा है...")
             time.sleep(2)
@@ -749,11 +725,17 @@ elif page == "quiz_analysis":
             continue
             
         with st.expander(f"प्रश्न {idx+1}: {q['question'][:50]}... [{badge}]"):
-            st.markdown(f"**पूर्ण प्रश्न:**\n\n{q['question']}")
+            st.markdown(f"**प्रश्न:** {q['question']}")
             st.markdown(f"आपका उत्तर: **{chosen_txt}**")
             st.markdown(f"सही उत्तर: <span style='color: #00e676; font-weight: bold;'>{correct}</span>", unsafe_allow_html=True)
-            st.markdown("---")
-            st.markdown(f"💡 **विस्तृत समाधान (Detailed Solution):**\n\n{q.get('explanation', 'समाधान उपलब्ध नहीं है।')}")
+            st.markdown(
+                f"""
+                <div class="solution-box">
+                    <b>💡 सरल समाधान:</b><br>{q.get('explanation', 'समाधान उपलब्ध नहीं है।')}
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
             
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🏠 Home पर जाएं", use_container_width=True, type="primary"):
