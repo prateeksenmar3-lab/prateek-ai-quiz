@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- CUSTOM CSS FOR FRONT PAGE DESIGN ---
+# --- CUSTOM CSS FOR EXACT UI DESIGN ---
 st.markdown(
     """
     <style>
@@ -51,6 +51,29 @@ st.markdown(
         text-align: center;
         margin-bottom: 20px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .card {
+        background: #160d26;
+        border: 1px solid #2a1b48;
+        border-radius: 16px;
+        padding: 18px;
+        margin-bottom: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .pw-top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #160d26;
+        padding: 10px 15px;
+        border-radius: 12px;
+        border: 1px solid #2a1b48;
+        margin-bottom: 15px;
+    }
+    .pw-timer {
+        color: #ff4b8b;
+        font-weight: bold;
+        font-size: 16px;
     }
     </style>
     """,
@@ -149,7 +172,7 @@ if page == "home":
         st.session_state.page = "pyq_practice"
         st.rerun()
         
-    if st.button("🤖  **AI Practice**\n\n AI से नए प्रश्न और मॉक टेस्ट", use_current_width=True if "use_current_width" in globals() else False, use_container_width=True):
+    if st.button("🤖  **AI Practice**\n\n AI से नए प्रश्न और मॉक टेस्ट", use_container_width=True):
         st.session_state.page = "ai_practice"
         st.rerun()
         
@@ -171,49 +194,32 @@ if page == "home":
         """,
         unsafe_allow_html=True,
     )
-    # --- PDF TO QUIZ PAGE ---
-elif st.session_state.page == "pdf_quiz":
+    elif page == "pdf_quiz":
     if st.button("⬅ Back"):
         st.session_state.page = "home"
         st.rerun()
         
     st.markdown("### 📄 PDF to Quiz")
-    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>अपनी PDF से MCQ टेस्ट बनाओ[span_1](start_span)[span_1](end_span)</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>अपनी PDF से MCQ टेस्ट बनाओ</p>", unsafe_allow_html=True)
     
-    # Upload Card Styling
-    uploaded_file = st.file_uploader("अपनी पढ़ाई की PDF चुनें [ PDF चुनें ][span_2](start_span)[span_2](end_span)", type=["pdf"])
-    
+    uploaded_file = st.file_uploader("अपनी पढ़ाई की PDF चुनें [ PDF चुनें ]", type=["pdf"])
     selected_subject = st.selectbox("📖 Select Subject (विषय चुनें)", subjects_list, key="pdf_sub")
     
-    st.markdown("#### प्रश्नों की संख्या[span_3](start_span)[span_3](end_span)")
-    num_q_choice = st.radio(
-        "प्रश्नों की संख्या चुनें:",
-        ["सभी प्रश्न", "10", "25", "50", "100", "200"],
-        horizontal=True,
-        key="num_q_radio"
-    )
-    
-    # Convert choice to integer
-    if num_q_choice == "सभी प्रश्न":
-        num_q = 20  # Default fallback if all
-    else:
-        num_q = int(num_q_choice)
+    st.markdown("#### प्रश्नों की संख्या")
+    num_q_choice = st.radio("प्रश्नों की संख्या चुनें:", ["सभी प्रश्न", "10", "25", "50", "100", "200"], horizontal=True, key="num_q_radio")
+    num_q = 20 if num_q_choice == "सभी प्रश्न" else int(num_q_choice)
         
-    st.markdown("#### 타이मर / समय[span_4](start_span)[span_4](end_span)")
+    st.markdown("#### टाइमर / समय")
     time_choice = st.selectbox("टेस्ट का समय चुनें:", ["15 मिनट", "30 मिनट", "60 मिनट", "अपनी पसंद (Custom)"])
-    if "अपनी पसंद" in time_choice:
-        time_min = st.slider("मिनट चुनें:", 10, 120, 30, step=5)
-    else:
-        time_min = int(time_choice.split(" ")[0])
+    time_min = st.slider("मिनट चुनें:", 10, 120, 30, step=5) if "अपनी पसंद" in time_choice else int(time_choice.split(" ")[0])
         
-    st.markdown("#### भाषा (Language)[span_5](start_span)[span_5](end_span)")
+    st.markdown("#### भाषा (Language)")
     lang_opt = st.selectbox("भाषा चुनें:", ["Hindi (हिंदी)", "English"])
     
     st.markdown("<br>", unsafe_allow_html=True)
-    
-    if st.button("🚀 क्विज़ बनाएँ[span_6](start_span)[span_6](end_span)", type="primary", use_container_width=True):
+    if st.button("🚀 क्विज़ बनाएँ", type="primary", use_container_width=True):
         if not client:
-            st.error("API Key missing! कृपया st.secrets चेक करें।")
+            st.error("API Key missing!")
         else:
             with st.spinner("Processing PDF with Flash AI..."):
                 try:
@@ -245,7 +251,6 @@ elif st.session_state.page == "pdf_quiz":
                     parsed_quiz = json.loads(clean_res)
                     st.session_state.quiz_data = parsed_quiz
                     st.session_state.user_answers = {}
-                    st.session_state.quiz_submitted = False
                     st.session_state.current_q_index = 0
                     file_name = uploaded_file.name if uploaded_file else "Sample PDF"
                     st.session_state.current_exam_info = f"PDF Quiz: {file_name} | {selected_subject}"
@@ -254,25 +259,25 @@ elif st.session_state.page == "pdf_quiz":
                 except Exception as e:
                     st.error(f"Error: {e}")
                     
-    st.markdown("<p style='font-size:12px; color:#b0a8c2; text-align:center; margin-top:15px;'>पुराने PDF सिस्टम की सुविधाएँ बनी रहेंगी। प्रश्न बनने के बाद टेस्ट शुरू होगा।[span_7](start_span)[span_7](end_span)</p>", unsafe_allow_html=True)
-                 # --- PYQ PRACTICE PAGE ---
-elif st.session_state.page == "pyq_practice":
+    st.markdown("<p style='font-size:12px; color:#b0a8c2; text-align:center; margin-top:15px;'>पुराने PDF सिस्टम की सुविधाएँ बनी रहेंगी। प्रश्न बनने के बाद टेस्ट शुरू होगा।</p>", unsafe_allow_html=True)
+
+elif page == "pyq_practice":
     if st.button("⬅ Back"):
         st.session_state.page = "home"
         st.rerun()
         
     st.markdown("### 🎓 PYQ Practice")
-    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>पिछले वर्षों के प्रश्न • असली PYQ • सही तारीख • विस्तृत समाधान[span_2](start_span)[span_2](end_span)</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>पिछले वर्षों के प्रश्न • असली PYQ • सही तारीख • विस्तृत समाधान</p>", unsafe_allow_html=True)
     
-    selected_exam = st.selectbox("एग्जाम चुनें (SSC / Railways / UP Police)", ["SSC", "Railways", "UP Police", "अन्य उपलब्ध परीक्षाएँ"])
-    selected_subject = st.selectbox("विषय चुनें (Maths / Reasoning / GS / English)", ["General Mathematics (गणित)", "Reasoning (तर्कशक्ति)", "General Knowledge / GS (सामान्य ज्ञान)", "English Language (अंग्रेजी)"])
+    selected_exam = st.selectbox("एग्जाम चुनें", ["SSC", "Railways", "UP Police", "अन्य उपलब्ध परीक्षाएँ"])
+    selected_subject = st.selectbox("विषय चुनें", ["General Mathematics (गणित)", "Reasoning (तर्कशक्ति)", "General Knowledge / GS (सामान्य ज्ञान)", "English Language (अंग्रेजी)"])
     selected_year = st.selectbox("वर्ष चुनें", ["2023", "2022", "2021", "2020"])
     
-    st.markdown("#### प्रश्नों की संख्या और 타이मर")
+    st.markdown("#### प्रश्नों की संख्या और टाइमर")
     num_q = st.slider("प्रश्नों की संख्या चुनें:", 10, 100, 20, step=10)
     time_min = st.slider("टेस्ट का समय (मिनट में):", 10, 60, 20, step=10)
     
-    if st.button("🚀 शुरू करें[span_3](start_span)[span_3](end_span)", type="primary", use_container_width=True):
+    if st.button("🚀 शुरू करें", type="primary", use_container_width=True):
         quiz_list = [
             {
                 "question": f"[{selected_exam} {selected_year}] भारत का संविधान कब लागू हुआ था?",
@@ -283,45 +288,38 @@ elif st.session_state.page == "pyq_practice":
         ]
         st.session_state.quiz_data = quiz_list * max(1, num_q // len(quiz_list))
         st.session_state.user_answers = {}
-        st.session_state.quiz_submitted = False
         st.session_state.current_q_index = 0
         st.session_state.current_exam_info = f"PYQ: {selected_exam} ({selected_year}) - {selected_subject}"
         st.session_state.page = "take_quiz"
         st.rerun()
         
-    st.markdown("<p style='font-size:12px; color:#b0a8c2; text-align:center; margin-top:15px;'>नोट: असली PYQ और AI से बने अभ्यास प्रश्न स्पष्ट रूप से अलग रहेंगे।[span_4](start_span)[span_4](end_span)</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size:12px; color:#b0a8c2; text-align:center; margin-top:15px;'>नोट: असली PYQ और AI से बने अभ्यास प्रश्न स्पष्ट रूप से अलग रहेंगे।</p>", unsafe_allow_html=True)
 
-
-# --- AI PRACTICE PAGE ---
-elif st.session_state.page == "ai_practice":
+elif page == "ai_practice":
     if st.button("⬅ Back"):
         st.session_state.page = "home"
         st.rerun()
         
     st.markdown("### 🤖 AI Practice")
-    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>AI से नए प्रश्न और मॉक टेस्ट • स्मार्ट प्रैक्टिस • बेहतर तैयारी[span_5](start_span)[span_5](end_span)</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>AI से नए प्रश्न और मॉक टेस्ट • स्मार्ट प्रैक्टिस • बेहतर तैयारी</p>", unsafe_allow_html=True)
     
     exam_type = st.selectbox("एग्जाम चुनें", ["SSC", "UPSC", "UP Police", "Railway", "Defence"])
     selected_subject = st.selectbox("विषय चुनें", ["General Studies", "General Mathematics", "Reasoning", "English"], key="ai_sub_box")
-    
     num_q = st.selectbox("प्रश्नों की संख्या", [10, 20, 30, 50, 100], index=1)
     time_min = st.selectbox("टाइमर (मिनट)", [10, 20, 30, 45, 60], index=1)
     
-    st.markdown("#### Difficulty Level[span_6](start_span)[span_6](end_span)")
+    st.markdown("#### Difficulty Level")
     diff_cols = st.columns(3)
-    with diff_cols[0]:
-        easy_btn = st.button("Easy", use_container_width=True)
-    with diff_cols[1]:
-        med_btn = st.button("Medium", use_container_width=True, type="primary")
-    with diff_cols[2]:
-        mod_btn = st.button("Moderate", use_container_width=True)
+    with diff_cols[0]: easy_btn = st.button("Easy", use_container_width=True)
+    with diff_cols[1]: med_btn = st.button("Medium", use_container_width=True, type="primary")
+    with diff_cols[2]: mod_btn = st.button("Moderate", use_container_width=True)
         
     selected_diff = "Medium"
     if easy_btn: selected_diff = "Easy"
     if mod_btn: selected_diff = "Moderate"
     
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🤖 Start AI Quiz[span_7](start_span)[span_7](end_span)", type="primary", use_container_width=True):
+    if st.button("🤖 Start AI Quiz", type="primary", use_container_width=True):
         if not client:
             st.error("API Key missing!")
         else:
@@ -343,15 +341,14 @@ elif st.session_state.page == "ai_practice":
                     parsed_quiz = json.loads(clean_res)
                     st.session_state.quiz_data = parsed_quiz
                     st.session_state.user_answers = {}
-                    st.session_state.quiz_submitted = False
                     st.session_state.current_q_index = 0
                     st.session_state.current_exam_info = f"AI Practice ({selected_diff}): {exam_type} - {selected_subject}"
                     st.session_state.page = "take_quiz"
                     st.rerun()
                 except Exception as e:
                     st.error(f"Error: {e}")
-        # --- QUICK ACCESS PAGE ---
-elif st.session_state.page == "quick_access":
+
+elif page == "quick_access":
     if st.button("⬅ Back"):
         st.session_state.page = "home"
         st.rerun()
@@ -371,7 +368,7 @@ elif st.session_state.page == "quick_access":
             """,
             unsafe_allow_html=True
         )
-        if st.button("[ Back to Home ]", type="primary", use_container_width=True):
+        if st.button("Back to Home", type="primary", use_container_width=True):
             st.session_state.show_coming_soon = False
             st.rerun()
     else:
@@ -386,7 +383,6 @@ elif st.session_state.page == "quick_access":
                     "explanation": "संविधान 26 जनवरी 1950 को लागू हुआ था।"
                 }] * 10
                 st.session_state.user_answers = {}
-                st.session_state.quiz_submitted = False
                 st.session_state.current_q_index = 0
                 st.session_state.page = "take_quiz"
                 st.rerun()
@@ -406,9 +402,24 @@ elif st.session_state.page == "quick_access":
             if st.button("👮 UP Police\nComing Soon", use_container_width=True):
                 st.session_state.show_coming_soon = True
                 st.rerun()
-            if st.button("🏢 Delhi Police\nComing Soon", use_container_width
-        # --- TAKE QUIZ SCREEN ---
-elif st.session_state.page == "take_quiz":
+            if st.button("🏢 Delhi Police\nComing Soon", use_container_width=True):
+                st.session_state.show_coming_soon = True
+                st.rerun()
+            if st.button("🎖️ Defence\nComing Soon", use_container_width=True):
+                st.session_state.show_coming_soon = True
+                st.rerun()
+                    elif page == "study_dashboard":
+    if st.button("⬅ Back"):
+        st.session_state.page = "home"
+        st.rerun()
+    st.markdown("### 📈 Study Dashboard & History")
+    total_tests = len(st.session_state.quiz_history)
+    st.markdown(f"<div class='card'><b>कुल दिए गए टेस्ट:</b> {total_tests}</div>", unsafe_allow_html=True)
+    if st.session_state.quiz_history:
+        for rec in reversed(st.session_state.quiz_history):
+            st.markdown(f"<div class='card'><b>{rec['exam_info']}</b><br>Score: {rec['score']}/{rec['total']} ({rec['percentage']}%)</div>", unsafe_allow_html=True)
+
+elif page == "take_quiz":
     if not st.session_state.quiz_data:
         st.warning("कोई सक्रिय क्विज़ उपलब्ध नहीं है।")
         if st.button("Home"):
@@ -434,7 +445,7 @@ elif st.session_state.page == "take_quiz":
         curr_idx = st.session_state.current_q_index
         q = quiz[curr_idx]
         
-        st.markdown(f"**{q['question']}**[span_6](start_span)[span_6](end_span)")
+        st.markdown(f"**{q['question']}**")
         st.write("")
         
         saved_ans = st.session_state.user_answers.get(curr_idx, None)
@@ -458,7 +469,6 @@ elif st.session_state.page == "take_quiz":
                 st.rerun()
                 
         if st.button("Submit Test", use_container_width=True, type="primary"):
-            st.session_state.quiz_submitted = True
             score = sum(1 for i, item in enumerate(quiz) if st.session_state.user_answers.get(i) == item['answer'])
             percentage = round((score / total_q) * 100, 1) if total_q > 0 else 0
             st.session_state.quiz_history.append({
@@ -471,9 +481,7 @@ elif st.session_state.page == "take_quiz":
             st.session_state.page = "quiz_results"
             st.rerun()
 
-
-# --- TEST RESULT SCREEN ---
-elif st.session_state.page == "quiz_results":
+elif page == "quiz_results":
     quiz = st.session_state.quiz_data
     user_ans = st.session_state.user_answers
     
@@ -515,16 +523,14 @@ elif st.session_state.page == "quiz_results":
         st.session_state.page = "home"
         st.rerun()
         
-    st.markdown("<p style='text-align:center; color:#b0a8c2; font-size:12px; margin-top:15px;'>रिजल्ट पहले दिखेगा, समाधान केवल Quiz Analysis दबाने पर।[span_7](start_span)[span_7](end_span)</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; color:#b0a8c2; font-size:12px; margin-top:15px;'>रिजल्ट पहले दिखेगा, समाधान केवल Quiz Analysis दबाने पर।</p>", unsafe_allow_html=True)
 
-
-# --- QUIZ ANALYSIS SCREEN ---
-elif st.session_state.page == "quiz_analysis":
+elif page == "quiz_analysis":
     if st.button("⬅ Back"):
         st.session_state.page = "quiz_results"
         st.rerun()
         
-    st.markdown("### 📊 Quiz Analysis[span_8](start_span)[span_8](end_span)")
+    st.markdown("### 📊 Quiz Analysis")
     quiz = st.session_state.quiz_data
     user_ans = st.session_state.user_answers
     
@@ -538,7 +544,7 @@ elif st.session_state.page == "quiz_analysis":
         <div class="card" style="background:#0b3c22; border:1px solid #00e676; padding:15px; margin-bottom:10px;">
             <b style="font-size:16px;">Correct Questions</b>
             <span style="float:right; font-size:20px;"><b>{correct_count}</b></span><br>
-            <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →[span_9](start_span)[span_9](end_span)</span>
+            <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -549,7 +555,7 @@ elif st.session_state.page == "quiz_analysis":
         <div class="card" style="background:#4a1525; border:1px solid #ff5252; padding:15px; margin-bottom:10px;">
             <b style="font-size:16px;">Wrong Questions</b>
             <span style="float:right; font-size:20px;"><b>{wrong_count}</b></span><br>
-            <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →[span_10](start_span)[span_10](end_span)</span>
+            <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -560,7 +566,7 @@ elif st.session_state.page == "quiz_analysis":
         <div class="card" style="background:#261f3d; border:1px solid #a855f7; padding:15px; margin-bottom:15px;">
             <b style="font-size:16px;">Skipped Questions</b>
             <span style="float:right; font-size:20px;"><b>{skipped_count}</b></span><br>
-            <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →[span_11](start_span)[span_11](end_span)</span>
+            <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →</span>
         </div>
         """,
         unsafe_allow_html=True,
@@ -583,8 +589,8 @@ elif st.session_state.page == "quiz_analysis":
             badge = "🔴 गलत"
             chosen_txt = chosen
             
-        with st.expander(f"प्रश्न {idx+1}: {q['question']} [{badge}][span_12](start_span)[span_12](end_span)"):
-            st.markdown(f"आपका उत्तर: **{chosen_txt}**[span_13](start_span)[span_13](end_span)")
+        with st.expander(f"प्रश्न {idx+1}: {q['question']} [{badge}]"):
+            st.markdown(f"आपका उत्तर: **{chosen_txt}**")
             st.markdown(f"सही उत्तर: <span style='color: #00e676; font-weight: bold;'>{correct}</span>", unsafe_allow_html=True)
             st.markdown("---")
             st.markdown(f"💡 **समाधान:**\n\n{q.get('explanation', 'समाधान उपलब्ध नहीं है।')}")
@@ -592,4 +598,3 @@ elif st.session_state.page == "quiz_analysis":
     if st.button("🏠 Home पर जाएं", use_container_width=True, type="primary"):
         st.session_state.page = "home"
         st.rerun()
-    
