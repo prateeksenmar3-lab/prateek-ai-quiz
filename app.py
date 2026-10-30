@@ -222,12 +222,12 @@ if page == "home":
         st.session_state.page = "pdf_quiz"
         st.rerun()
         
-    if st.button("🎓  **PYQ Practice**\n\n पिछले वर्षों के प्रश्नों का अभ्यास", use_container_width=True):
-        st.session_state.page = "pyq_practice"
-        st.rerun()
-        
     if st.button("🤖  **AI Practice**\n\n AI से नए प्रश्न और मॉक टेस्ट", use_container_width=True):
         st.session_state.page = "ai_practice"
+        st.rerun()
+        
+    if st.button("🎓  **PYQ Practice**\n\n पिछले वर्षों के प्रश्नों का अभ्यास", use_container_width=True):
+        st.session_state.page = "pyq_practice"
         st.rerun()
         
     if st.button("🗂️  **Quick Access**\n\n अपने एग्जाम को चुनें", use_container_width=True):
@@ -327,8 +327,8 @@ elif page == "pyq_practice":
         """
         <div class="card" style="border: 1px solid #ff4b8b; text-align:center; padding: 30px; margin-top: 20px;">
             <h3>🚀 COMING SOON</h3>
-            <p><b>PYQ Practice पर काम जारी है! 🛠️</b></p
-                    <p>बहुत जल्द पिछले वर्षों के सभी प्रश्न और विस्तृत समाधान यहाँ उपलब्ध होंगे।</p>
+            <p><b>PYQ Practice पर काम जारी है! 🛠️</b></p>
+            <p>बहुत जल्द पिछले वर्षों के सभी प्रश्न और विस्तृत समाधान यहाँ उपलब्ध होंगे।</p>
             <p style="color:#00d2ff; font-style:italic;">“तैयारी मजबूत होगी, थोड़ा इंतज़ार करें!” 🔥</p>
         </div>
         """,
@@ -431,79 +431,24 @@ elif page == "quick_access":
                 st.session_state.quiz_duration_mins = 20
                 st.session_state.page = "take_quiz"
                 st.rerun()
-            if st.button("🛡️ SSC GD\nAvailable", use_container_width=True):
-                st.session_state.current_exam_info = "Quick Access: SSC GD"
-                st.session_state.quiz_data = [{
-                    "question": "भारत का राष्ट्रीय पशु कौन सा है?",
-                    "options": ["शेर", "बाघ", "हाथी", "चीता"],
-                    "answer": "बाघ",
-                    "explanation": "भारत का राष्ट्रीय पशु बंगाल टाइगर (बाघ) है।"
-                }] * 10
-                st.session_state.user_answers = {}
-                st.session_state.current_q_index = 0
-                st.session_state.quiz_start_time = time.time()
-                st.session_state.quiz_duration_mins = 20
-                st.session_state.page = "take_quiz"
+            if st.button("🛡️ SSC GD\nComing Soon", use_container_width=True):
+                st.session_state.show_coming_soon = True
                 st.rerun()
-            if st.button("🚆 RRB NTPC\nAvailable", use_container_width=True):
-                st.session_state.current_exam_info = "Quick Access: Railway RRB NTPC"
-                st.session_state.quiz_data = [{
-                    "question": "भारतीय रेलवे बोर्ड की स्थापना कब हुई थी?",
-                    "options": ["1905", "1950", "1920", "1853"],
-                    "answer": "1905",
-                    "explanation": "भारतीय रेलवे बोर्ड की स्थापना मार्च 1905 में लॉर्ड कर्ज़न के कार्यकाल में हुई थी।"
-                }] * 10
-                st.session_state.user_answers = {}
-                st.session_state.current_q_index = 0
-                st.session_state.quiz_start_time = time.time()
-                st.session_state.quiz_duration_mins = 20
-                st.session_state.page = "take_quiz"
+            if st.button("🚆 RRB NTPC\nComing Soon", use_container_width=True):
+                st.session_state.show_coming_soon = True
                 st.rerun()
             if st.button("⭐ UPSC\nComing Soon", use_container_width=True):
                 st.session_state.show_coming_soon = True
                 st.rerun()
         with col2:
-            if st.button("🚆 RRB Group D\nAvailable", use_container_width=True):
-                st.session_state.current_exam_info = "Quick Access: Railway RRB Group D"
-                st.session_state.quiz_data = [{
-                    "question": "भारत में पहली ट्रेन कहाँ से कहाँ तक चली थी?",
-                    "options": ["मुंबई से ठाणे", "हावड़ा से दिल्ली", "चेन्नई से मदुरै", "दिल्ली से आगरा"],
-                    "answer": "मुंबई से ठाणे",
-                    "explanation": "भारत की पहली यात्री ट्रेन 16 अप्रैल 1853 को मुंबई से ठाणे के बीच चली थी।"
-                }] * 10
-                st.session_state.user_answers = {}
-                st.session_state.current_q_index = 0
-                st.session_state.quiz_start_time = time.time()
-                st.session_state.quiz_duration_mins = 20
-                st.session_state.page = "take_quiz"
+            if st.button("🚆 RRB Group D\nComing Soon", use_container_width=True):
+                st.session_state.show_coming_soon = True
                 st.rerun()
-            if st.button("👮 UP Police\nAvailable", use_container_width=True):
-                st.session_state.current_exam_info = "Quick Access: UP Police"
-                st.session_state.quiz_data = [{
-                    "question": "उत्तर प्रदेश की राजधानी क्या है?",
-                    "options": ["कानपुर", "लखनऊ", "वाराणसी", "आगरा"],
-                    "answer": "लखनऊ",
-                    "explanation": "उत्तर प्रदेश की राजधानी लखनऊ है।"
-                }] * 10
-                st.session_state.user_answers = {}
-                st.session_state.current_q_index = 0
-                st.session_state.quiz_start_time = time.time()
-                st.session_state.quiz_duration_mins = 20
-                st.session_state.page = "take_quiz"
+            if st.button("👮 UP Police\nComing Soon", use_container_width=True):
+                st.session_state.show_coming_soon = True
                 st.rerun()
-            if st.button("🏢 SSC CHSL\nAvailable", use_container_width=True):
-                st.session_state.current_exam_info = "Quick Access: SSC CHSL"
-                st.session_state.quiz_data = [{
-                    "question": "भारत में कितने राज्य हैं?",
-                    "options": ["28", "29", "27", "30"],
-                    "answer": "28",
-                    "explanation": "वर्तमान में भारत में 28 राज्य हैं।"
-                }] * 10
-                st.session_state.user_answers = {}
-                st.session_state.current_q_index = 0
-                st.session_state.quiz_start_time = time.time()
-                st.session_state.quiz_duration_mins = 20
-                st.session_state.page = "take_quiz"
+            if st.button("🏢 SSC CHSL\nComing Soon", use_container_width=True):
+                st.session_state.show_coming_soon = True
                 st.rerun()
             if st.button("🎖️ Defence\nComing Soon", use_container_width=True):
                 st.session_state.show_coming_soon = True
@@ -531,22 +476,26 @@ elif page == "take_quiz":
         format_total_q = len(quiz)
         curr_idx = st.session_state.current_q_index
         
-        # Timer & Question counter placed right above the question seamlessly
-        elapsed_seconds = int(time.time() - st.session_state.quiz_start_time)
-        total_allowed_seconds = st.session_state.quiz_duration_mins * 60
-        remaining_seconds = max(0, total_allowed_seconds - elapsed_seconds)
-        rem_mins = remaining_seconds // 60
-        rem_secs = remaining_seconds % 60
-        
-        col_tb1, col_tb2 = st.columns([1, 1])
+        # Top bar with Back to Home button, Language selector, and Timer/Question count
+        col_tb1, col_tb2, col_tb3 = st.columns([1, 1, 1])
         with col_tb1:
-            st.selectbox("Language", ["Hindi (हिंदी)", "English"], key="active_lang_sel", label_visibility="collapsed")
+            if st.button("⬅ Back to Home", use_container_width=True):
+                st.session_state.page = "home"
+                st.rerun()
         with col_tb2:
+            st.selectbox("Language", ["Hindi (हिंदी)", "English"], key="active_lang_sel", label_visibility="collapsed")
+        with col_tb3:
+            elapsed_seconds = int(time.time() - st.session_state.quiz_start_time)
+            total_allowed_seconds = st.session_state.quiz_duration_mins * 60
+            remaining_seconds = max(0, total_allowed_seconds - elapsed_seconds)
+            rem_mins = remaining_seconds // 60
+            rem_secs = remaining_seconds % 60
+            
             st.markdown(
                 f"""
                 <div style="text-align: right; padding-top: 5px;">
-                    <span style="color: #ff4b8b; font-weight: bold; font-size: 14px; background: #160d26; padding: 4px 8px; border-radius: 8px; border: 1px solid #2a1b48;">
-                        ⏱️ {rem_mins:02d}:{rem_secs:02d} | प्रश्न {curr_idx + 1}/{format_total_q}
+                    <span style="color: #ff4b8b; font-weight: bold; font-size: 13px; background: #160d26; padding: 4px 6px; border-radius: 8px; border: 1px solid #2a1b48;">
+                        ⏱️ {rem_mins:02d}:{rem_secs:02d} | Q {curr_idx + 1}/{format_total_q}
                     </span>
                 </div>
                 """, 
@@ -721,6 +670,7 @@ elif page == "quiz_analysis":
             badge = "🔴 गलत"
             chosen_txt = chosen
             
+        # Strictly show only matching category based on active filter
         if st.session_state.analysis_filter != "All" and status != st.session_state.analysis_filter:
             continue
             
