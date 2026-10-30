@@ -194,7 +194,8 @@ if page == "home":
         """,
         unsafe_allow_html=True,
     )
-    elif page == "pdf_quiz":
+
+elif page == "pdf_quiz":
     if st.button("⬅ Back"):
         st.session_state.page = "home"
         st.rerun()
@@ -408,7 +409,8 @@ elif page == "quick_access":
             if st.button("🎖️ Defence\nComing Soon", use_container_width=True):
                 st.session_state.show_coming_soon = True
                 st.rerun()
-                    elif page == "study_dashboard":
+
+elif page == "study_dashboard":
     if st.button("⬅ Back"):
         st.session_state.page = "home"
         st.rerun()
