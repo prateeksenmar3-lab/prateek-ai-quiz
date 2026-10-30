@@ -14,7 +14,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# --- CUSTOM CSS (Matching Exact Screenshots UI & Dark Purple Gradient Theme) ---
+# --- CUSTOM CSS (Exact Screenshot UI Styling) ---
 st.markdown(
     """
     <style>
@@ -127,8 +127,6 @@ if "quiz_language" not in st.session_state:
     st.session_state.quiz_language = "Hindi (हिंदी)"
 if "show_coming_soon" not in st.session_state:
     st.session_state.show_coming_soon = False
-if "analysis_tab" not in st.session_state:
-    st.session_state.analysis_tab = "all"
 
 # --- HEADER BRANDING ---
 st.markdown(
@@ -159,9 +157,9 @@ subjects_list = [
 page = st.session_state.page
 
 if page == "home":
-    st.markdown("### अपनी तैयारी को अगला स्तर दो!")
-    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>Practice smarter. Improve faster. Achieve more.</p>", unsafe_allow_html=True)
-    st.markdown("#### ⚡ Choose Your Practice")
+    st.markdown("### अपनी तैयारी को अगला स्तर दो[span_3](start_span)[span_3](end_span)!")
+    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>Practice smarter. Improve faster. Achieve more.[span_4](start_span)[span_4](end_span)</p>", unsafe_allow_html=True)
+    st.markdown("#### ⚡ Choose Your Practice[span_5](start_span)[span_5](end_span)")
     
     if st.button("📄 PDF to Quiz\nअपनी PDF से MCQ टेस्ट बनाओ", use_container_width=True):
         st.session_state.page = "pdf_quiz"
@@ -180,7 +178,7 @@ if page == "home":
         st.rerun()
         
     st.markdown("---")
-    st.markdown("<div style='text-align:center; font-size:13px; color:#b0a8c2;'>✨ PRATEEK SENMAR ✨<br>Your Preparation • Your Progress • Your Success</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; font-size:12px; color:#b0a8c2;'>✨ PRATEEK SENMAR ✨<br>Your Preparation • Your Progress • Your Success[span_6](start_span)[span_6](end_span)</div>", unsafe_allow_html=True)
 
 elif page == "pdf_quiz":
     if st.button("⬅ Back"):
@@ -188,9 +186,9 @@ elif page == "pdf_quiz":
         st.rerun()
         
     st.markdown("### 📄 PDF to Quiz")
-    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>अपनी PDF से MCQ टेस्ट बनाओ</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>अपनी PDF से MCQ टेस्ट बनाओ[span_7](start_span)[span_7](end_span)</p>", unsafe_allow_html=True)
     
-    uploaded_file = st.file_uploader("अपनी पढ़ाई की PDF चुनें (Max 20MB)", type=["pdf"])
+    uploaded_file = st.file_uploader("अपनी पढ़ाई की PDF चुनें (Max 20MB)[span_8](start_span)[span_8](end_span)", type=["pdf"])
     
     selected_subject = st.selectbox("📖 Select Subject", subjects_list, key="pdf_sub")
     num_q = st.slider("प्रश्नों की संख्या", 10, 200, 20, step=5)
@@ -243,7 +241,7 @@ elif page == "pyq_practice":
         st.rerun()
         
     st.markdown("### 📜 PYQ Practice")
-    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>असली PYQ • सही तारीख • विस्तृत समाधान</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>असली PYQ • सही तारीख • विस्तृत समाधान[span_9](start_span)[span_9](end_span)</p>", unsafe_allow_html=True)
     
     selected_exam = st.selectbox("एग्जाम चुनें", ["SSC", "Railways", "UP Police", "अन्य उपलब्ध परीक्षाएँ"])
     selected_subject = st.selectbox("विषय चुनें", subjects_list, key="pyq_sub")
@@ -274,7 +272,7 @@ elif page == "ai_practice":
         st.rerun()
         
     st.markdown("### 🧠 AI Practice")
-    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>स्मार्ट प्रैक्टिस • बेहतर तैयारी</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>स्मार्ट प्रैक्टिस • बेहतर तैयारी[span_10](start_span)[span_10](end_span)</p>", unsafe_allow_html=True)
     
     exam_type = st.selectbox("एग्जाम चुनें", ["SSC", "UPSC", "UP Police", "Railway", "Defence"])
     selected_subject = st.selectbox("विषय चुनें", subjects_list, key="ai_sub")
@@ -317,17 +315,17 @@ elif page == "quick_access":
         st.rerun()
         
     st.markdown("### ⚡ QUICK ACCESS")
-    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>अपना एग्जाम चुनें</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>अपना एग्जाम चुनें[span_11](start_span)[span_11](end_span)</p>", unsafe_allow_html=True)
     
     if st.session_state.show_coming_soon:
         st.markdown(
             """
             <div class="card" style="border: 1px solid #ff4b8b; text-align:center;">
                 <h3>🚀 COMING SOON</h3>
-                <p><b>अभी काम कुछ समय के लिए रुका हुआ है।</b></p>
-                <p>अभी Depression का दौर चल रहा है, इसलिए काम बंद है। ❤️‍🩹</p>
-                <p>अभी वक्त मुश्किल है, लेकिन वापसी होगी और धमाका बड़ा करेंगे! 🔥</p>
-                <p style="font-style:italic; color:#b0a8c2;">“हिम्मत रखो, यह भी गुजर जाएगा...”</p>
+                <p><b>अभी काम कुछ समय के लिए रुका हुआ है।[span_12](start_span)[span_12](end_span)</b></p>
+                <p>अभी Depression का दौर चल रहा है, इसलिए काम बंद है। ❤️‍🩹[span_13](start_span)[span_13](end_span)</p>
+                <p>अभी वक्त मुश्किल है, लेकिन वापसी होगी और धमाका बड़ा करेंगे! 🔥[span_14](start_span)[span_14](end_span)</p>
+                <p style="font-style:italic; color:#b0a8c2;">“हिम्मत रखो, यह भी गुजर जाएगा...[span_15](start_span)”[span_15](end_span)</p>
             </div>
             """,
             unsafe_allow_html=True
@@ -433,7 +431,7 @@ elif page == "take_quiz":
         curr_idx = st.session_state.current_q_index
         q = quiz[curr_idx]
         
-        st.markdown(f"**{q['question']}**")
+        st.markdown(f"**{q['question']}**[span_16](start_span)[span_16](end_span)")
         st.write("")
         
         saved_ans = st.session_state.user_answers.get(curr_idx, None)
@@ -468,14 +466,13 @@ elif page == "take_quiz":
                     "percentage": percentage
                 })
                 st.session_state.page = "quiz_results"
-                st.rerun()
-    # --- TEST RESULT & QUIZ ANALYSIS ---
+                st.rerun()# --- TEST RESULT & QUIZ ANALYSIS ---
 elif page == "quiz_results":
     if st.button("🏠 Home"):
         st.session_state.page = "home"
         st.rerun()
         
-    st.markdown("### 🏆 Test Result")
+    st.markdown("### 🏆 Test Result[span_17](start_span)[span_17](end_span)")
     quiz = st.session_state.quiz_data
     user_ans = st.session_state.user_answers
     
@@ -521,7 +518,7 @@ elif page == "quiz_analysis":
         st.session_state.page = "quiz_results"
         st.rerun()
         
-    st.markdown("### 📊 Quiz Analysis")
+    st.markdown("### 📊 Quiz Analysis[span_18](start_span)[span_18](end_span)")
     quiz = st.session_state.quiz_data
     user_ans = st.session_state.user_answers
     
@@ -530,25 +527,24 @@ elif page == "quiz_analysis":
     wrong_count = sum(1 for idx, q in enumerate(quiz) if user_ans.get(idx) is not None and user_ans.get(idx) != q['answer'])
     skipped_count = sum(1 for idx in range(total) if user_ans.get(idx) is None)
     
-    # Analysis Summary Cards (Clickable via radio filter)
     st.markdown(f"""
     <div class="card" style="background:#0b3c22; border:1px solid #00e676;">
         <b>Correct Questions</b><span style="float:right; font-size:18px;"><b>{correct_count}</b></span><br>
-        <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →</span>
+        <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →[span_19](start_span)[span_19](end_span)</span>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown(f"""
     <div class="card" style="background:#4a1525; border:1px solid #ff5252;">
         <b>Wrong Questions</b><span style="float:right; font-size:18px;"><b>{wrong_count}</b></span><br>
-        <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →</span>
+        <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →[span_20](start_span)[span_20](end_span)</span>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown(f"""
     <div class="card" style="background:#261f3d; border:1px solid #a855f7;">
         <b>Skipped Questions</b><span style="float:right; font-size:18px;"><b>{skipped_count}</b></span><br>
-        <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →</span>
+        <span style="font-size:12px; color:#b0a8c2;">क्लिक करके संबंधित प्रश्न देखें →[span_21](start_span)[span_21](end_span)</span>
     </div>
     """, unsafe_allow_html=True)
     
