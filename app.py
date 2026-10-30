@@ -154,22 +154,22 @@ if "last_prompt_text" not in st.session_state:
 # --- EXAM WISE SUBJECTS MAPPING ---
 exam_subjects_map = {
     "SSC CGL": [
-        "Quantitative Aptitude (Ganit)",
-        "General Intelligence & Reasoning (Tarkshakti)",
+        "Quantitative Aptitude (गणित)",
+        "General Intelligence & Reasoning (तर्कशक्ति)",
         "English Comprehension",
         "General Awareness / GS",
         "Complete SSC CGL Tier-1 Mock"
     ],
     "SSC GD": [
-        "General Intelligence & Reasoning (Tarkshakti)",
+        "General Intelligence & Reasoning (तर्कशक्ति)",
         "General Knowledge & General Awareness",
-        "Elementary Mathematics (Ganit)",
+        "Elementary Mathematics (गणित)",
         "Hindi / English",
         "Complete SSC GD Mock Test"
     ],
     "SSC CHSL": [
-        "Quantitative Aptitude (Ganit)",
-        "Reasoning (Tarkshakti)",
+        "Quantitative Aptitude (गणित)",
+        "Reasoning (तर्कशक्ति)",
         "English Language",
         "General Awareness"
     ],
@@ -186,7 +186,7 @@ exam_subjects_map = {
         "General Knowledge & General Awareness"
     ],
     "Railway RRB NTPC": [
-        "Mathematics (Ganit)",
+        "Mathematics (गणित)",
         "General Intelligence & Reasoning",
         "General Awareness & Current Affairs",
         "Complete RRB NTPC CBT-1 Mock"
@@ -204,7 +204,7 @@ exam_subjects_map = {
         "Complete UPSC Prelims GS Mock"
     ],
     "UP Police Constable / SI": [
-        "General Hindi",
+        "General Hindi (सामान्य हिंदी)",
         "Numerical & Mental Ability",
         "Mental Aptitude / IQ / Reasoning",
         "General Knowledge / UP GK"
@@ -317,7 +317,7 @@ elif page == "pdf_quiz":
                     else:
                         pdf_text = f"General questions for {selected_subject}"
                         
-                    lang_inst = "in pure and simple Hindi language" if lang_opt == "हि v" else "in English language"
+                    lang_inst = "in pure, standard and grammatically correct Hindi language (Devanagari script)" if lang_opt == "हि v" else "in English language"
                     prompt = f"""
                     Based strictly on the text for '{selected_subject}', generate {num_q} MCQs with 4 options each.
                     Ensure the 'answer' field matches EXACTLY one of the strings provided in the 'options' list.
@@ -395,7 +395,7 @@ elif page == "ai_practice":
         else:
             with st.spinner(f"Generating AI questions ({selected_diff})..."):
                 try:
-                    lang_inst = "in pure and simple Hindi language" if lang_opt == "हि v" else "in English language"
+                    lang_inst = "in pure, standard and grammatically correct Hindi language (Devanagari script)" if lang_opt == "हि v" else "in English language"
                     prompt = f"""
                     Generate {num_q} MCQs for {selected_exam} on subject '{selected_subject}' with 4 options each.
                     Difficulty: {selected_diff}.
@@ -525,8 +525,8 @@ elif page == "take_quiz":
                     st.session_state.active_quiz_lang = new_lang
                     with st.spinner(f"Translating quiz to {new_lang}..."):
                         try:
-                            lang_inst = "in pure and simple Hindi language" if new_lang == "हि v" else "in English language"
-                            updated_prompt = re.sub(r'in (pure and simple Hindi language|English language)', lang_inst, st.session_state.last_prompt_text)
+                            lang_inst = "in pure, standard and grammatically correct Hindi language (Devanagari script)" if new_lang == "हि v" else "in English language"
+                            updated_prompt = re.sub(r'in (pure, standard and grammatically correct Hindi language \(Devanagari script\)|English language)', lang_inst, st.session_state.last_prompt_text)
                             raw_text = generate_quiz_with_fallback(updated_prompt)
                             st.session_state.quiz_data = parse_json_safely(raw_text)
                             st.rerun()
