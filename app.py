@@ -288,9 +288,9 @@ elif page == "pdf_quiz":
     
     uploaded_file = st.file_uploader("Apni padhai ki PDF chunein", type=["pdf"])
     
-    st.markdown("#### Prashno ki sankhya (Strict Count)")
+    st.markdown("#### Prashno ki sankhya (Strict Max Limit)")
     num_q_choice = st.radio("Prashno ki sankhya chunein:", ["10", "25", "50", "100", "200"], horizontal=True, key="num_q_radio")
-    num_q = int(num_q_choice)
+    requested_num_q = int(num_q_choice)
         
     st.markdown("#### Timer / Samay")
     time_min = st.slider("Test ka samay (minute mein):", min_value=5, max_value=180, value=30, step=5)
@@ -307,21 +307,26 @@ elif page == "pdf_quiz":
                 try:
                     reader = PdfReader(uploaded_file) if uploaded_file else None
                     pdf_text = ""
+                    total_pdf_questions = requested_num_q
                     if reader:
                         for page_obj in reader.pages:
                             if page_obj.extract_text():
                                 pdf_text += page_obj.extract_text() + "\n"
                         pdf_text = pdf_text[:40000]
+                        total_pdf_questions = min(requested_num_q, max(5, len(reader.pages) * 10))
                     else:
                         pdf_text = "General practice questions based on uploaded document."
+                        total_pdf_questions = requested_num_q
                         
+                    final_q_count = min(requested_num_q, total_pdf_questions)
+                    
                     is_hindi = (lang_opt == "हि v")
                     lang_inst = "in pure, standard and grammatically correct Hindi language (Devanagari script)" if is_hindi else "in English language"
                     active_lang_code = "हि v" if is_hindi else "En v"
                     
                     prompt = f"""
-                    You are an expert AI exam creator. Read the provided text, automatically detect its subject/topic, and generate EXACTLY {num_q} multiple-choice questions (MCQs) with 4 options each.
-                    CRITICAL REQUIREMENT: Do NOT generate more or fewer than {num_q} questions. The total number of items in the output JSON list must be exactly {num_q}.
+                    You are an expert AI exam creator. Read the provided text, automatically detect its subject/topic, and generate EXACTLY {final_q_count} multiple-choice questions (MCQs) with 4 options each.
+                    CRITICAL REQUIREMENT: Do NOT generate more than {final_q_count} questions. The total number of items in the output JSON list must not exceed {final_q_count}.
                     Ensure the 'answer' field matches EXACTLY one of the strings provided in the 'options' list.
                     Provide detailed, step-by-step, clear and comprehensive explanations {lang_inst} so the student can easily understand the logic and solution.
                     Output strictly in valid JSON format as a list of objects with keys: 
@@ -335,7 +340,7 @@ elif page == "pdf_quiz":
                     parsed_quiz = parse_json_safely(raw_text)
                     
                     if isinstance(parsed_quiz, list):
-                        parsed_quiz = parsed_quiz[:num_q]
+                        parsed_quiz = parsed_quiz[:final_q_count]
                     
                     st.session_state.quiz_data = parsed_quiz
                     st.session_state.user_answers = {}
@@ -407,7 +412,7 @@ elif page == "ai_practice":
                     prompt = f"""
                     Generate EXACTLY {num_q} MCQs for {selected_exam} on subject '{selected_subject}' with 4 options each.
                     Difficulty: {selected_diff}.
-                    CRITICAL REQUIREMENT: Do NOT generate more or fewer than {num_q} questions.
+                    CRITICAL REQUIREMENT: Do NOT generate more than {num_q} questions.
                     The 'answer' field MUST match EXACTLY one of the strings given in the 'options' list. 
                     Provide detailed, step-by-step, clear and comprehensive explanations {lang_inst} so the student can easily understand the logic and solution.
                     Output strictly in valid JSON list format with keys: 'question', 'options', 'answer', 'explanation'.
@@ -748,6 +753,6 @@ elif page == "quiz_analysis":
             )
             
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🏠 Home par jaen", type="primary", use_container_width=True):
+    if st.button("🏠 Home par jaen", use_container_width=True, type="primary"):
         st.session_state.page = "home"
         st.rerun()
