@@ -154,22 +154,22 @@ if "last_prompt_text" not in st.session_state:
 # --- EXAM WISE SUBJECTS MAPPING ---
 exam_subjects_map = {
     "SSC CGL": [
-        "Quantitative Aptitude (गणित)",
-        "General Intelligence & Reasoning (तर्कशक्ति)",
+        "Quantitative Aptitude (Ganit)",
+        "General Intelligence & Reasoning (Tarkshakti)",
         "English Comprehension",
         "General Awareness / GS",
         "Complete SSC CGL Tier-1 Mock"
     ],
     "SSC GD": [
-        "General Intelligence & Reasoning (तर्कशक्ति)",
+        "General Intelligence & Reasoning (Tarkshakti)",
         "General Knowledge & General Awareness",
-        "Elementary Mathematics (गणित)",
+        "Elementary Mathematics (Ganit)",
         "Hindi / English",
         "Complete SSC GD Mock Test"
     ],
     "SSC CHSL": [
-        "Quantitative Aptitude (गणित)",
-        "Reasoning (तर्कशक्ति)",
+        "Quantitative Aptitude (Ganit)",
+        "Reasoning (Tarkshakti)",
         "English Language",
         "General Awareness"
     ],
@@ -186,7 +186,7 @@ exam_subjects_map = {
         "General Knowledge & General Awareness"
     ],
     "Railway RRB NTPC": [
-        "Mathematics (गणित)",
+        "Mathematics (Ganit)",
         "General Intelligence & Reasoning",
         "General Awareness & Current Affairs",
         "Complete RRB NTPC CBT-1 Mock"
@@ -204,7 +204,7 @@ exam_subjects_map = {
         "Complete UPSC Prelims GS Mock"
     ],
     "UP Police Constable / SI": [
-        "General Hindi (सामान्य हिंदी)",
+        "General Hindi",
         "Numerical & Mental Ability",
         "Mental Aptitude / IQ / Reasoning",
         "General Knowledge / UP GK"
@@ -298,7 +298,7 @@ elif page == "pdf_quiz":
     time_min = st.slider("Test ka samay (minute mein):", min_value=5, max_value=180, value=30, step=5)
     
     st.markdown("#### Bhasha (Language)")
-    lang_opt = st.selectbox("Bhasha chunein:", ["हि v", "En v"])
+    lang_opt = st.selectbox("Bhasha chunein:", ["हि v", "En v"], key="pdf_lang_sel")
     
     st.markdown("<br>", unsafe_allow_html=True)
     if st.button("🚀 Quiz Banayein", type="primary", use_container_width=True):
@@ -317,7 +317,10 @@ elif page == "pdf_quiz":
                     else:
                         pdf_text = f"General questions for {selected_subject}"
                         
-                    lang_inst = "in pure, standard and grammatically correct Hindi language (Devanagari script)" if lang_opt == "हि v" else "in English language"
+                    is_hindi = (lang_opt == "हि v")
+                    lang_inst = "in pure, standard and grammatically correct Hindi language (Devanagari script)" if is_hindi else "in English language"
+                    active_lang_code = "हि v" if is_hindi else "En v"
+                    
                     prompt = f"""
                     Based strictly on the text for '{selected_subject}', generate {num_q} MCQs with 4 options each.
                     Ensure the 'answer' field matches EXACTLY one of the strings provided in the 'options' list.
@@ -327,7 +330,7 @@ elif page == "pdf_quiz":
                     Text: {pdf_text}
                     """
                     st.session_state.last_prompt_text = prompt
-                    st.session_state.active_quiz_lang = lang_opt
+                    st.session_state.active_quiz_lang = active_lang_code
                     
                     raw_text = generate_quiz_with_fallback(prompt)
                     parsed_quiz = parse_json_safely(raw_text)
@@ -395,7 +398,10 @@ elif page == "ai_practice":
         else:
             with st.spinner(f"Generating AI questions ({selected_diff})..."):
                 try:
-                    lang_inst = "in pure, standard and grammatically correct Hindi language (Devanagari script)" if lang_opt == "हि v" else "in English language"
+                    is_hindi = (lang_opt == "हि v")
+                    lang_inst = "in pure, standard and grammatically correct Hindi language (Devanagari script)" if is_hindi else "in English language"
+                    active_lang_code = "हि v" if is_hindi else "En v"
+                    
                     prompt = f"""
                     Generate {num_q} MCQs for {selected_exam} on subject '{selected_subject}' with 4 options each.
                     Difficulty: {selected_diff}.
@@ -404,7 +410,7 @@ elif page == "ai_practice":
                     Output strictly in valid JSON list format with keys: 'question', 'options', 'answer', 'explanation'.
                     """
                     st.session_state.last_prompt_text = prompt
-                    st.session_state.active_quiz_lang = lang_opt
+                    st.session_state.active_quiz_lang = active_lang_code
                     
                     raw_text = generate_quiz_with_fallback(prompt)
                     parsed_quiz = parse_json_safely(raw_text)
@@ -520,12 +526,16 @@ elif page == "take_quiz":
             
             sub_c1, sub_c2 = st.columns([1, 1.2])
             with sub_c1:
-                new_lang = st.selectbox("Lang", ["हि v", "En v"], key="active_in_quiz_lang", label_visibility="collapsed")
+                lang_options_list = ["हि v", "En v"]
+                default_lang_idx = lang_options_list.index(st.session_state.active_quiz_lang) if st.session_state.active_quiz_lang in lang_options_list else 0
+                new_lang = st.selectbox("Lang", lang_options_list, index=default_lang_idx, key="active_in_quiz_lang", label_visibility="collapsed")
+                
                 if new_lang != st.session_state.active_quiz_lang and st.session_state.last_prompt_text:
                     st.session_state.active_quiz_lang = new_lang
                     with st.spinner("Translating..."):
                         try:
-                            lang_inst = "in pure, standard and grammatically correct Hindi language (Devanagari script)" if new_lang == "हि v" else "in English language"
+                            is_hindi = (new_lang == "हि v")
+                            lang_inst = "in pure, standard and grammatically correct Hindi language (Devanagari script)" if is_hindi else "in English language"
                             updated_prompt = re.sub(r'in (pure, standard and grammatically correct Hindi language \(Devanagari script\)|English language)', lang_inst, st.session_state.last_prompt_text)
                             raw_text = generate_quiz_with_fallback(updated_prompt)
                             st.session_state.quiz_data = parse_json_safely(raw_text)
