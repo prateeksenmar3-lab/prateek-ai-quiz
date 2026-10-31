@@ -284,13 +284,11 @@ elif page == "pdf_quiz":
         st.rerun()
         
     st.markdown("### 📄 PDF to Quiz")
-    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>Apni PDF se MCQ test banao</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color:#b0a8c2; font-size:13px;'>AI khud PDF analyze karega aur test banayega</p>", unsafe_allow_html=True)
     
     uploaded_file = st.file_uploader("Apni padhai ki PDF chunein", type=["pdf"])
-    all_subjects_flat = [sub for sub_list in exam_subjects_map.values() for sub in sub_list]
-    selected_subject = st.selectbox("📖 Select Subject", all_subjects_flat, key="pdf_sub")
     
-    st.markdown("#### Prashno ki sankhya (Up to 200)")
+    st.markdown("#### Prashno ki sankhya (Strict Count)")
     num_q_choice = st.radio("Prashno ki sankhya chunein:", ["10", "25", "50", "100", "200"], horizontal=True, key="num_q_radio")
     num_q = int(num_q_choice)
         
@@ -305,7 +303,7 @@ elif page == "pdf_quiz":
         if not client:
             st.error("API Key missing!")
         else:
-            with st.spinner("Processing PDF with Flash AI..."):
+            with st.spinner("AI is analyzing your PDF and generating test..."):
                 try:
                     reader = PdfReader(uploaded_file) if uploaded_file else None
                     pdf_text = ""
@@ -313,16 +311,17 @@ elif page == "pdf_quiz":
                         for page_obj in reader.pages:
                             if page_obj.extract_text():
                                 pdf_text += page_obj.extract_text() + "\n"
-                        pdf_text = pdf_text[:35000]
+                        pdf_text = pdf_text[:40000]
                     else:
-                        pdf_text = f"General questions for {selected_subject}"
+                        pdf_text = "General practice questions based on uploaded document."
                         
                     is_hindi = (lang_opt == "हि v")
                     lang_inst = "in pure, standard and grammatically correct Hindi language (Devanagari script)" if is_hindi else "in English language"
                     active_lang_code = "हि v" if is_hindi else "En v"
                     
                     prompt = f"""
-                    Based strictly on the text for '{selected_subject}', generate {num_q} MCQs with 4 options each.
+                    You are an expert AI exam creator. Read the provided text, automatically detect its subject/topic, and generate EXACTLY {num_q} multiple-choice questions (MCQs) with 4 options each.
+                    CRITICAL REQUIREMENT: Do NOT generate more or fewer than {num_q} questions. The total number of items in the output JSON list must be exactly {num_q}.
                     Ensure the 'answer' field matches EXACTLY one of the strings provided in the 'options' list.
                     Provide detailed, step-by-step, clear and comprehensive explanations {lang_inst} so the student can easily understand the logic and solution.
                     Output strictly in valid JSON format as a list of objects with keys: 
@@ -335,13 +334,16 @@ elif page == "pdf_quiz":
                     raw_text = generate_quiz_with_fallback(prompt)
                     parsed_quiz = parse_json_safely(raw_text)
                     
+                    if isinstance(parsed_quiz, list):
+                        parsed_quiz = parsed_quiz[:num_q]
+                    
                     st.session_state.quiz_data = parsed_quiz
                     st.session_state.user_answers = {}
                     st.session_state.current_q_index = 0
                     st.session_state.quiz_start_time = time.time()
                     st.session_state.quiz_duration_mins = time_min
                     file_name = uploaded_file.name if uploaded_file else "Sample PDF"
-                    st.session_state.current_exam_info = f"PDF Quiz: {file_name} | {selected_subject}"
+                    st.session_state.current_exam_info = f"PDF Quiz: {file_name}"
                     st.session_state.page = "take_quiz"
                     st.rerun()
                 except Exception as e:
@@ -403,9 +405,10 @@ elif page == "ai_practice":
                     active_lang_code = "हि v" if is_hindi else "En v"
                     
                     prompt = f"""
-                    Generate {num_q} MCQs for {selected_exam} on subject '{selected_subject}' with 4 options each.
+                    Generate EXACTLY {num_q} MCQs for {selected_exam} on subject '{selected_subject}' with 4 options each.
                     Difficulty: {selected_diff}.
-                    CRITICAL: The 'answer' field MUST match EXACTLY one of the strings given in the 'options' list. 
+                    CRITICAL REQUIREMENT: Do NOT generate more or fewer than {num_q} questions.
+                    The 'answer' field MUST match EXACTLY one of the strings given in the 'options' list. 
                     Provide detailed, step-by-step, clear and comprehensive explanations {lang_inst} so the student can easily understand the logic and solution.
                     Output strictly in valid JSON list format with keys: 'question', 'options', 'answer', 'explanation'.
                     """
@@ -415,6 +418,9 @@ elif page == "ai_practice":
                     raw_text = generate_quiz_with_fallback(prompt)
                     parsed_quiz = parse_json_safely(raw_text)
                     
+                    if isinstance(parsed_quiz, list):
+                        parsed_quiz = parsed_quiz[:num_q]
+                        
                     st.session_state.quiz_data = parsed_quiz
                     st.session_state.user_answers = {}
                     st.session_state.current_q_index = 0
@@ -538,7 +544,10 @@ elif page == "take_quiz":
                             lang_inst = "in pure, standard and grammatically correct Hindi language (Devanagari script)" if is_hindi else "in English language"
                             updated_prompt = re.sub(r'in (pure, standard and grammatically correct Hindi language \(Devanagari script\)|English language)', lang_inst, st.session_state.last_prompt_text)
                             raw_text = generate_quiz_with_fallback(updated_prompt)
-                            st.session_state.quiz_data = parse_json_safely(raw_text)
+                            parsed_quiz = parse_json_safely(raw_text)
+                            if isinstance(parsed_quiz, list) and format_total_q > 0:
+                                parsed_quiz = parsed_quiz[:format_total_q]
+                            st.session_state.quiz_data = parsed_quiz
                             st.rerun()
                         except Exception as ex:
                             st.error(f"Translation failed: {ex}")
@@ -739,6 +748,6 @@ elif page == "quiz_analysis":
             )
             
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("🏠 Home par jaen", use_container_width=True, type="primary"):
+    if st.button("🏠 Home par jaen", type="primary", use_container_width=True):
         st.session_state.page = "home"
         st.rerun()
